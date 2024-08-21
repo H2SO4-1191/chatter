@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="preloaded_fonts" translatable="false">
+        <item>@font/</item>
+        <item>@font/abril_fatface</item>
+        <item>@font/aguafina_script</item>
+        <item>@font/alike_angular</item>
+        <item>@font/amarante</item>
+        <item>@font/amiri_quran</item>
+    </array>
+</resources>
