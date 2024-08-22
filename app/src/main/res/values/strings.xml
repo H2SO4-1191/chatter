@@ -16,4 +16,11 @@
     <string name="password">Password:</string>
     <string name="chatter_welcomes_you">Chatter welcomes you...</string>
     <string name="not_a_member_in_chatter_sign_up_right_now">Not a member in Chatter? Sign-Up right now</string>
+    <string name="username">Username:</string>
+    <string name="confirm_password">Confirm Password:</string>
+    <string name="birth">Birth:</string>
+    <string name="phone_number">Phone Number:</string>
+    <string name="hello_new_chatter">Hello, new chatter</string>
+    <string name="m">M</string>
+    <string name="f">F</string>
 </resources>
