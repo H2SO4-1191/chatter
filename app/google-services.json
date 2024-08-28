@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "529713389599",
+    "project_id": "h2so4-chatter",
+    "storage_bucket": "h2so4-chatter.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:529713389599:android:5a0a9c031d2b582a33352a",
+        "android_client_info": {
+          "package_name": "com.h2so4.chatter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2omWM0x_BSXd4zZoKt1paKzs5HfkEiE0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

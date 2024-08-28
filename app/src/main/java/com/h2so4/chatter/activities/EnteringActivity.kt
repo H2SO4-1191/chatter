@@ -1,11 +1,10 @@
-package com.h2so4.chatter.controller
+package com.h2so4.chatter.activities
 
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -82,7 +81,9 @@ class EnteringActivity : AppCompatActivity() {
                 ui.email.isVisible = false
                 ui.password.isVisible = false
                 ui.loginDoor.isVisible = false
-            }
+                val loggedIntent = Intent(this, LoggedActivity::class.java)
+                startActivity(loggedIntent)
+            }.start()
         }
     }
     private fun setSignUpPressed() {

@@ -10,7 +10,7 @@
         android:id="@+id/chatter"
         android:layout_width="130dp"
         android:layout_height="130dp"
-        android:background="@drawable/round_button"
+        android:background="@drawable/chatter_button"
         android:fontFamily="@font/amiri_quran"
         android:foreground="@drawable/round_ripple"
         android:paddingStart="10dp"

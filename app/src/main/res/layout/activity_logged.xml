@@ -5,7 +5,7 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activities.MainActivity"
+    tools:context=".activities.LoggedActivity"
     android:background="@color/black">
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationDrawer"
@@ -20,8 +20,8 @@
         app:itemRippleColor="@color/seriousYellow"
         app:drawerLayoutCornerSize="0dp"
         android:layout_gravity="start"/>
-    <include android:id="@+id/main_content"
-        layout="@layout/main_content"
+    <include android:id="@+id/logged_content"
+        layout="@layout/logged_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 </androidx.drawerlayout.widget.DrawerLayout>
