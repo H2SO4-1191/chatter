@@ -1,5 +1,6 @@
 package com.h2so4.chatter.activities
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -9,12 +10,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.view.marginRight
+import com.google.firebase.firestore.FirebaseFirestore
 import com.h2so4.chatter.R
 import com.h2so4.chatter.databinding.ActivityEnteringBinding
+import com.h2so4.chatter.models.Pop
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class EnteringActivity : AppCompatActivity() {
 
     private lateinit var ui: ActivityEnteringBinding
+    private lateinit var database: FirebaseFirestore
+    private lateinit var usernames: ArrayList<String>
+    private lateinit var emails: ArrayList<String>
+    private lateinit var phoneNumbers: ArrayList<String>
+    private var signedUp: Boolean? = null
     private val size = DisplayMetrics()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,6 +34,8 @@ class EnteringActivity : AppCompatActivity() {
         setContentView(ui.root)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
         windowManager.defaultDisplay.getRealMetrics(size)
+        database = FirebaseFirestore.getInstance()
+        downloadInfo()
         setFoundLogin()
         setLoginPressed()
         setSignUpPressed()
@@ -87,7 +100,6 @@ class EnteringActivity : AppCompatActivity() {
         }
     }
     private fun setSignUpPressed() {
-
         ui.signUpPen.setOnClickListener {
             ui.signUpPen.animate().apply {
                 duration = 500
@@ -102,10 +114,42 @@ class EnteringActivity : AppCompatActivity() {
                         translationY(size.heightPixels.toFloat() * -1)
                     }.withEndAction {
                         val signupIntent = Intent(this@EnteringActivity, SignupActivity::class.java)
-                        startActivity(signupIntent)
+                        signupIntent.putStringArrayListExtra("usernames", usernames)
+                        signupIntent.putStringArrayListExtra("emails", emails)
+                        signupIntent.putStringArrayListExtra("phoneNumbers", phoneNumbers)
+                        startActivityForResult(signupIntent, 1)
                     }.start()
                 }
             }
+        }
+    }
+    private fun downloadInfo() {
+        MainScope().launch {
+            usernames = getField("Username")
+            emails = getField("Email")
+            phoneNumbers = getField("PhoneNumbers")
+        }
+    }
+    private suspend fun getField(field: String): ArrayList<String> {
+        return ArrayList(database.collection("Chatters").get().await().documents.mapNotNull { it.getString(field) })
+    }
+    private fun hint(message: String) { Pop.pop(this, message) }
+    @Deprecated("This method has been deprecated in favor of using the Activity Result API\n      which brings increased type safety via an {@link ActivityResultContract} and the prebuilt\n      contracts for common intents available in\n      {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for\n      testing, and allow receiving results in separate, testable classes independent from your\n      activity. Use\n      {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}\n      with the appropriate {@link ActivityResultContract} and handling the result in the\n      {@link ActivityResultCallback#onActivityResult(Object) callback}.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if(resultCode != Activity.RESULT_OK) return
+        if(requestCode == 1) {
+            signedUp = data?.getBooleanExtra("signedUp", false)
+            if(signedUp == true) hint("You can now sign in to your Chatter account to continue verification.")
+            ui.signUpPen.rotation = -45f
+            ui.signUpPen.animate().apply {
+                duration = 1500
+                translationY(0f)
+            }.start()
+            ui.signUpPen.animate().apply {
+                duration = 2000
+                rotation(0f)
+            }.start()
         }
     }
 }

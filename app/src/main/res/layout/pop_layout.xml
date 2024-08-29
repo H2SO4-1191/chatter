@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:padding="15dp"
+    android:background="@drawable/input_field">
+
+    <TextView
+        android:id="@+id/toast_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Pop-up"
+        android:fontFamily="@font/alike_angular"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="@android:color/white" />
+</LinearLayout>
