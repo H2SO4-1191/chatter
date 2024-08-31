@@ -10,7 +10,7 @@
     tools:context=".activities.EnteringActivity">
 
     <EditText
-        android:id="@+id/email"
+        android:id="@+id/inputField"
         android:layout_width="250dp"
         android:layout_height="40dp"
         android:layout_marginTop="100dp"
@@ -23,8 +23,8 @@
         android:singleLine="true"
         android:textAlignment="viewStart"
         android:textColor="@color/seriousYellow"
-        android:textColorHint="@color/black"
-        android:textSize="16sp"
+        android:textColorHint="@color/white"
+        android:textSize="14sp"
         android:textStyle="italic"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -32,7 +32,7 @@
         app:layout_constraintTop_toBottomOf="@+id/welcome" />
 
     <EditText
-        android:id="@+id/password"
+        android:id="@+id/passwordField"
         android:layout_width="250dp"
         android:layout_height="40dp"
         android:layout_marginTop="16dp"
@@ -42,23 +42,25 @@
         android:hint="@string/password"
         android:inputType="textPassword"
         android:paddingStart="10dp"
+        android:paddingEnd="50dp"
         android:singleLine="true"
         android:textAlignment="viewStart"
         android:textColor="@color/seriousYellow"
-        android:textColorHint="@color/black"
-        android:textSize="16sp"
+        android:textColorHint="@color/white"
+        android:textSize="14sp"
         android:textStyle="italic"
-        app:layout_constraintEnd_toEndOf="@+id/email"
+        app:layout_constraintEnd_toEndOf="@+id/inputField"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="@+id/email"
-        app:layout_constraintTop_toBottomOf="@+id/email" />
+        app:layout_constraintStart_toStartOf="@+id/inputField"
+        app:layout_constraintTop_toBottomOf="@+id/inputField" />
 
     <Button
         android:id="@+id/loginDoor"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:layout_marginEnd="250dp"
+        android:layout_marginEnd="300dp"
         android:backgroundTint="#00000000"
+        android:enabled="false"
         android:fontFamily="serif"
         android:foreground="@drawable/baseline_login_24"
         android:paddingLeft="25dp"
@@ -67,9 +69,9 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@+id/password"
+        app:layout_constraintBottom_toBottomOf="@+id/passwordField"
         app:layout_constraintEnd_toStartOf="@+id/center"
-        app:layout_constraintTop_toTopOf="@+id/email"
+        app:layout_constraintTop_toTopOf="@+id/inputField"
         tools:visibility="visible" />
 
     <TextView
@@ -127,4 +129,47 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintGuide_percent="0.55"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/showPassword"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@null"
+        android:foreground="@android:drawable/ic_menu_view"
+        android:foregroundTint="@color/seriousYellow"
+        app:layout_constraintBottom_toBottomOf="@+id/passwordField"
+        app:layout_constraintEnd_toEndOf="@+id/passwordField"
+        app:layout_constraintHorizontal_bias="0.95"
+        app:layout_constraintStart_toStartOf="@+id/passwordField"
+        app:layout_constraintTop_toTopOf="@+id/passwordField" />
+
+    <TextView
+        android:id="@+id/forgotPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@null"
+        android:fontFamily="@font/alike_angular"
+        android:text="@string/forgot_your_password"
+        android:textAlignment="center"
+        android:textColor="@color/seriousYellow"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/passwordField"
+        app:layout_constraintStart_toStartOf="@+id/passwordField"
+        app:layout_constraintTop_toBottomOf="@+id/passwordField" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/seriousYellowAlpha"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/passwordField"
+        app:layout_constraintStart_toEndOf="@+id/inputField"
+        app:layout_constraintTop_toTopOf="@+id/inputField"
+        tools:visibility="visible" />
 </androidx.constraintlayout.widget.ConstraintLayout>

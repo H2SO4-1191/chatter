@@ -42,10 +42,12 @@ class MainActivity : AppCompatActivity() {
     }
     private fun setChatterPressed() {
         ui.mainContent.chatter.setOnClickListener {
+            ui.mainContent.chatter.isEnabled = false
             ui.mainContent.chatter.animate().apply {
-                duration = 2000
+                duration = 1500
                 rotationYBy(1440f)
             }.withEndAction {
+                ui.mainContent.chatter.isEnabled = true
                 val signingIntent = Intent(this, EnteringActivity::class.java)
                 startActivity(signingIntent)
             }.start()

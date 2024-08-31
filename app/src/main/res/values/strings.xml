@@ -12,7 +12,7 @@
     <string name="rate">Rate</string>
     <string name="open">Open Navigation Bar</string>
     <string name="close">Close Navigation Bar</string>
-    <string name="email">Email:</string>
+    <string name="email">Username, Email or Phone number:</string>
     <string name="password">Password:</string>
     <string name="chatter_welcomes_you">Chatter welcomes you</string>
     <string name="not_a_member_in_chatter_sign_up_right_now">Not a member in Chatter? Sign-Up right now</string>
@@ -25,4 +25,5 @@
     <string name="f">F</string>
     <string name="not_logged_in">Not logged in</string>
     <string name="first_amp_last_name"><![CDATA[First & Last Name:]]></string>
+    <string name="forgot_your_password">Forgot your password?</string>
 </resources>

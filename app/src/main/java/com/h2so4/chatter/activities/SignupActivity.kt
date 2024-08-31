@@ -41,9 +41,11 @@ import com.h2so4.chatter.databinding.ActivitySignupBinding
 import com.h2so4.chatter.models.Chatter
 import com.h2so4.chatter.models.Data.countries
 import com.h2so4.chatter.models.Pop
+import com.h2so4.chatter.models.PreRegex
 import java.io.ByteArrayOutputStream
 import kotlin.math.roundToInt
 import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 
 class SignupActivity : AppCompatActivity() {
@@ -55,9 +57,6 @@ class SignupActivity : AppCompatActivity() {
     private val size = DisplayMetrics()
     private var steps = 1
     private var isAnimating: Boolean = false
-    private var usernames: ArrayList<String>? = null
-    private var emails: ArrayList<String>? = null
-    private var phoneNumbers:ArrayList<String>? = null
     private var signedUp: Boolean? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,14 +67,7 @@ class SignupActivity : AppCompatActivity() {
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
         windowManager.defaultDisplay.getRealMetrics(size)
         pen()
-        getInfo()
         setListeners()
-    }
-
-    private fun getInfo() {
-        usernames = intent.getStringArrayListExtra("usernames")
-        emails = intent.getStringArrayListExtra("emails")
-        phoneNumbers = intent.getStringArrayListExtra("phoneNumbers")
     }
     private fun pen() {
         hint("The pen will be your guide, tap it when guidance is needed.", "Hint")
@@ -99,7 +91,7 @@ class SignupActivity : AppCompatActivity() {
                         duration = 2000
                         ui.fullNameField.startAnimation(AnimationUtils.loadAnimation(this@SignupActivity, R.anim.fade_in))
                     }.withEndAction {
-                        ui.fullNameField.isVisible = true
+                        ui.fullNameField.visibility = View.VISIBLE
                     }.start()
                 }.start()
             }.start()
@@ -111,7 +103,7 @@ class SignupActivity : AppCompatActivity() {
             ui.userNameField -> "Username has to be unique, over 3 characters and have no spaces.\ne.g: H2SO4-1191."
             ui.emailField -> "Email has to be unique and in the form of an actual email address.\ne.g: example@example.example."
             ui.phoneNumberField -> "Phone number has to be unique, without spaces and in the form of an actual phone number with \'+\' and country code so do not write the trunk prefix (the first \'0\').\n-Tap the map for country codes.\ne.g: +964??????????."
-            ui.passwordField -> "Password has to of 8 characters or more and have both digits and letters.\ne.g: 1q2w3e4r."
+            ui.passwordField -> "Password has to of be 6 characters or more.\ne.g: 1q2w3e."
             ui.confirmPasswordField -> "Confirm password has to match the password."
             ui.birth -> "Tap the Birth field and pick your birth from the calender, tap the year to scroll through years faster.\ne.g: 07/01/2004"
             ui.profilePicture -> "Tap on the circle to add a profile picture, or hold the pen and skip it."
@@ -120,23 +112,23 @@ class SignupActivity : AppCompatActivity() {
         ui.pen.setOnClickListener { hint(hint, "Hint") }
     }
     private fun setListeners() {
-        infoChecker(ui.fullNameField, "^(?!.*\\d)[^\\d\\s]+\\s[^\\d\\s]+\$", ui.userNameField)
-        infoChecker(ui.userNameField, "^[A-Za-z0-9!@#\$%^&*()_+={}\\[\\]:;\"'<>,.?\\/\\\\|`~\\-]{3,}\$", ui.emailField)
-        infoChecker(ui.emailField, "[a-zA-Z0-9._-]+@[a-zA-Z]+\\.+[a-zA-Z]+", ui.phoneNumberField)
-        infoChecker(ui.phoneNumberField, "^\\+\\d{10,15}\$", ui.passwordField)
+        infoChecker(ui.fullNameField, PreRegex.fullName, ui.userNameField)
+        infoChecker(ui.userNameField, PreRegex.username, ui.emailField)
+        infoChecker(ui.emailField, PreRegex.email, ui.phoneNumberField)
+        infoChecker(ui.phoneNumberField, PreRegex.phoneNumber, ui.passwordField)
         setCountryCode()
         setShowPassword(ui.showPassword, ui.passwordField)
         setShowPassword(ui.showConfirmPassword, ui.confirmPasswordField)
-        infoChecker(ui.passwordField, "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$", ui.confirmPasswordField)
+        infoChecker(ui.passwordField, PreRegex.password, ui.confirmPasswordField)
         ui.birth.setOnFocusChangeListener { _, hasFocus -> if(hasFocus) pickDate() }
         ui.birth.setOnClickListener { pickDate() }
-        infoChecker(ui.confirmPasswordField, "", ui.birth)
-        infoChecker(ui.birth, "\\d{2}/\\d{2}/\\d{4}", ui.maleButton)
+        infoChecker(ui.confirmPasswordField, "".toRegex(), ui.birth)
+        infoChecker(ui.birth, PreRegex.birth, ui.maleButton)
         ui.maleButton.setOnClickListener { gender(ui.maleButton) }
         ui.femaleButton.setOnClickListener { gender(ui.femaleButton) }
         ui.profilePicture.setOnClickListener { setPP() }
     }
-    private fun infoChecker(target: TextView, regex: String, next: View) {
+    private fun infoChecker(target: TextView, regex: Regex, next: View) {
         val co: View? = when(target) {
             ui.emailField -> ui.countryCode
             ui.phoneNumberField -> ui.showPassword
@@ -165,17 +157,19 @@ class SignupActivity : AppCompatActivity() {
                     if(target == ui.confirmPasswordField && !isAnimating && !next.isVisible) {
                         if(target.text.toString() == ui.passwordField.text.toString()) step(next, co)
                     } else {
-                        if(target.text.toString().matches(regex.toRegex()) && !isAnimating && !next.isVisible) {
+                        if(target.text.toString().matches(regex) && !isAnimating && !next.isVisible) {
                             if(unique) {
-                                if(isAvailable(target.text.toString(), type)) {
-                                    setThings(target)
-                                    step(next, co)
-                                } else hint("$type is already registered.", "Error")
+                                MainScope().launch {
+                                    if(isAvailable(target.text.toString(), type, true)) {
+                                        setThings(target)
+                                        step(next, co)
+                                    } else hint("$type is already registered.", "Error")
+                                }
                             } else {
                                 setThings(target)
                                 step(next, co)
                             }
-                        } else if(target.text.toString().isNotBlank()) hint("Invalid format", "Error")
+                        } else if(target.text.toString().isNotBlank() && !isAnimating && !next.isVisible) hint("Invalid format", "Error")
                     }
                 }
                 handler.postDelayed(runnable!!, 1500)
@@ -196,20 +190,29 @@ class SignupActivity : AppCompatActivity() {
             co?.startAnimation(AnimationUtils.loadAnimation(this@SignupActivity, R.anim.fade_in))
             if(next == ui.maleButton) ui.femaleButton.startAnimation(AnimationUtils.loadAnimation(this@SignupActivity, R.anim.fade_in))
         }.withEndAction {
-            next.isVisible = true
-            if(next == ui.maleButton) ui.femaleButton.isVisible = true
-            co?.isVisible = true
+            next.visibility = View.VISIBLE
+            if(next == ui.maleButton) ui.femaleButton.visibility = View.VISIBLE
+            co?.visibility = View.VISIBLE
             isAnimating = false
         }.start()
         steps++
     }
-    private fun isAvailable(target: String, type: String): Boolean {
-        val list = when(type) {
-            "Username" -> usernames
-            "Email" -> emails
-            else -> phoneNumbers
+    private suspend fun isAvailable(target: String, type: String, check: Boolean): Boolean {
+        var available = true
+        var checking: View? = null
+        if(check) {
+             checking = when(type) {
+                "Username" -> ui.checkingUsername
+                "Email" -> ui.checkingEmail
+                "PhoneNumber" -> ui.checkingPhoneNumber
+                else -> null
+            }
+            checking?.visibility = View.VISIBLE
         }
-        return !list?.any { it.equals(target, ignoreCase = true) }!!
+        val query = database.collection("Chatters").whereEqualTo(type, target.uppercase()).get().await()
+        if(!query.isEmpty) available = false
+        checking?.visibility = View.INVISIBLE
+        return available
     }
     private fun setCountryCode() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, countries.keys.toList())
@@ -220,12 +223,6 @@ class SignupActivity : AppCompatActivity() {
                 ui.phoneNumberField.setText(countries[parent.getItemAtPosition(position).toString()].toString())
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-    }
-    private fun setShowPassword(button: Button, text: TextView) {
-        button.setOnClickListener {
-            if(text.inputType == 129) text.inputType = 1
-            else text.inputType = 129
         }
     }
     private fun pickDate() {
@@ -256,18 +253,22 @@ class SignupActivity : AppCompatActivity() {
         if(pressed.isChecked) {
             done()
             penHint(ui.profilePicture)
-            ui.profilePicture.foreground = pp
+            if(!ui.profilePicture.isVisible) {
+                ui.profilePicture.foreground = pp
+                ui.profilePicture.foregroundTintList = ui.pen.foregroundTintList
+            }
         } else {
             penHint(ui.maleButton)
-            newChatter.gender = ""
-            ui.profilePicture.foreground = ContextCompat.getDrawable(this, R.drawable.baseline_account_circle_24)
+            newChatter.gender = null
+            if(!ui.profilePicture.isVisible) ui.profilePicture.foreground = ContextCompat.getDrawable(this, R.drawable.baseline_account_circle_24)
+            ui.pen.setOnLongClickListener { false }
         }
         if(!ui.profilePicture.isVisible) {
             ui.profilePicture.animate().apply {
                 duration = 1000
                 ui.profilePicture.startAnimation(AnimationUtils.loadAnimation(this@SignupActivity, R.anim.fade_in))
             }.withEndAction {
-                ui.profilePicture.isVisible = true
+                ui.profilePicture.visibility = View.VISIBLE
             }.start()
         }
     }
@@ -341,7 +342,7 @@ class SignupActivity : AppCompatActivity() {
         newChatter.birth = ui.birth.text.toString()
     }
     private fun done() {
-        hint("To skip profile picture hold the pen.", "Hint")
+        if(!ui.profilePicture.isVisible) hint("To skip profile picture hold the pen.", "Hint")
         penHint(ui.profilePicture)
         ui.pen.setOnLongClickListener {
             confirm()
@@ -355,27 +356,29 @@ class SignupActivity : AppCompatActivity() {
             onNo = { hint("Double check your information please.", "Hint") }
         )
     }
-    private fun manualCheckHelper(input: String, type: String,regex: String, unique: Boolean): Boolean {
+    private fun manualCheckHelper(input: String, type: String,regex: Regex, unique: Boolean): Boolean {
         var pass = true
-        if(!input.matches(regex.toRegex())) {
+        if(!input.matches(regex)) {
             pass = false
-            hint("Invalid username format.", "Error")
+            hint("Invalid $type format.", "Error")
         }
         if(unique) {
-            if(!isAvailable(input, type)) {
-                pass = false
-                hint("$type is already registered.", "Error")
+            MainScope().launch {
+                if(!isAvailable(input, type, false)) {
+                    pass = false
+                    hint("$type is already registered.", "Error")
+                }
             }
         }
         return pass
     }
     private fun finalManualInDepthCheck(): Boolean {
         var finalSay = true
-        if(!manualCheckHelper(ui.fullNameField.text.toString(), "FullName", "^(?!.*\\d)[^\\d\\s]+\\s[^\\d\\s]+\$", false)) finalSay = false
-        if(!manualCheckHelper(ui.userNameField.text.toString(), "Username", "^[A-Za-z0-9!@#\$%^&*()_+={}\\[\\]:;\"'<>,.?\\/\\\\|`~\\-]{3,}\$", true)) finalSay = false
-        if(!manualCheckHelper(ui.emailField.text.toString(), "Email", "[a-zA-Z0-9._-]+@[a-zA-Z]+\\.+[a-zA-Z]+", true)) finalSay = false
-        if(!manualCheckHelper(ui.phoneNumberField.text.toString(), "PhoneNumber", "^\\+\\d{10,15}\$", true)) finalSay = false
-        if(!manualCheckHelper(ui.passwordField.text.toString(), "Password", "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$", false)) finalSay = false
+        if(!manualCheckHelper(ui.fullNameField.text.toString(), "FullName", PreRegex.fullName, false)) finalSay = false
+        if(!manualCheckHelper(ui.userNameField.text.toString(), "Username", PreRegex.username, true)) finalSay = false
+        if(!manualCheckHelper(ui.emailField.text.toString(), "Email", PreRegex.email, true)) finalSay = false
+        if(!manualCheckHelper(ui.phoneNumberField.text.toString(), "PhoneNumber", PreRegex.phoneNumber, true)) finalSay = false
+        if(!manualCheckHelper(ui.passwordField.text.toString(), "Password", PreRegex.password, false)) finalSay = false
         if(ui.confirmPasswordField.text.toString() != ui.passwordField.text.toString()) hint("Passwords do not match.", "Error")
         if(ui.birth.text.toString().isBlank()) hint("Birthdate is not provided.", "Error")
         if(newChatter.gender == null) hint("Gender is not provided.", "Error")
@@ -384,18 +387,18 @@ class SignupActivity : AppCompatActivity() {
     private fun signup() {
         if(finalManualInDepthCheck()) {
             setUpChatter()
-            if(isEmailRegistered(newChatter.email!!)) hint("Email is already registered", "Error")
-            else sendVerificationEmail(newChatter.email!!, newChatter.password!!)
+            ui.pen.isEnabled = false
+            ui.progressBar.visibility = View.VISIBLE
+            checkAndSendVerificationEmail(newChatter.email!!, newChatter.password!!)
         }
     }
     private fun pushToDatabase() {
         database = FirebaseFirestore.getInstance()
         val newChatterInfo = hashMapOf(
             "FullName" to newChatter.fullName,
-            "Username" to newChatter.username,
-            "Email" to newChatter.email,
+            "Username" to newChatter.username?.uppercase(),
+            "Email" to newChatter.email?.uppercase(),
             "PhoneNumber" to newChatter.phoneNumber,
-            "Password" to newChatter.password,
             "Birth" to newChatter.birth,
             "Gender" to newChatter.gender,
             "ProfilePicture" to newChatter.profilePicture
@@ -405,7 +408,7 @@ class SignupActivity : AppCompatActivity() {
             .addOnSuccessListener { wayBack(true) }
             .addOnFailureListener { e ->
                 hint("Failed to sign you up, check your internet connection.\n${e.message.toString()}", "Error")
-                ui.progressBar.isVisible = false
+                ui.progressBar.visibility = View.INVISIBLE
             }
     }
     private fun wayBack(result: Boolean) {
@@ -423,9 +426,7 @@ class SignupActivity : AppCompatActivity() {
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")
     override fun onBackPressed() {
         showYesNoDialog(this, "Are you certain that you want to cancel signup?",
-            onYes = {
-                wayBack(false)
-            },
+            onYes = { wayBack(false) },
             onNo = {}
         )
         if(false) super.onBackPressed()
@@ -442,47 +443,39 @@ class SignupActivity : AppCompatActivity() {
             .show()
     }
     private fun hint(message: String, type: String?) { Pop.pop(this, "$type: $message") }
-    private fun sendVerificationEmail(email: String, password: String) {
-        if(!isEmailRegistered(email)) {
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        hint("Verification email will soon be sent to \"$email\".", "Hint")
-                        val user = auth.currentUser
-                        user?.sendEmailVerification()
-                            ?.addOnCompleteListener { emailTask ->
-                                if (emailTask.isSuccessful) {
-                                    hint("Verification email had been sent to \"$email\".\nPlease check your inbox to verify your email.", "Hint")
-                                    pushToDatabase()
-                                }
-                                else {
-                                    hint("Failed to send verification email.", "Error")
-                                    ui.progressBar.isVisible = false
-                                }
-                            }
-                    } else {
-                        hint("Failed to check your email, check your internet connection.", "Error")
-                        ui.progressBar.isVisible = false
-                    }
-                }
-        }
-    }
-    private fun isEmailRegistered(email: String): Boolean {
-        var itis = false
-        ui.progressBar.isVisible = true
-        auth.fetchSignInMethodsForEmail(email)
-            .addOnCompleteListener { task ->
+    private fun checkAndSendVerificationEmail(email: String, password: String) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    if (task.result?.signInMethods.isNullOrEmpty()) itis = false
-                    else itis = true
+                    hint("Verification email will soon be sent to \"$email\".", "Hint")
+                    val user = auth.currentUser
+                    user?.sendEmailVerification()
+                        ?.addOnCompleteListener { emailTask ->
+                            if (emailTask.isSuccessful) {
+                                hint("Verification email had been sent to \"$email\".\nPlease check your inbox to verify your email.", "Hint")
+                                pushToDatabase()
+                            }
+                            else {
+                                hint("Failed to send verification email.", "Error")
+                                ui.pen.isEnabled = true
+                                ui.progressBar.visibility = View.INVISIBLE
+                            }
+                        }
                 } else {
-                    hint("Failed to check your email, check your internet connection.", "Error")
-                    ui.progressBar.isVisible = false
+                    hint("Email address is already associated with a Chatter account, try another account please.", "Error")
+                    ui.pen.isEnabled = true
+                    ui.progressBar.visibility = View.INVISIBLE
                 }
             }
-        return itis
+    }
+    companion object {
+        fun setShowPassword(button: Button, text: TextView) {
+            button.setOnClickListener {
+                if(text.inputType == 129) text.inputType = 1
+                else text.inputType = 129
+            }
+        }
     }
 }
-//        return auth.currentUser?.isEmailVerified ?: false        //
 
-//try sign in first then send code if succeeded//
+//        return auth.currentUser?.isEmailVerified ?: false        //
