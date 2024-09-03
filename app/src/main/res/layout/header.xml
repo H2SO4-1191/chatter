@@ -10,55 +10,45 @@
         android:id="@+id/userNameHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="56dp"
         android:fontFamily="sans-serif-medium"
-        android:text="@string/not_logged_in"
         android:textColor="@color/black"
         android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@+id/profileImageHeader"
-        app:layout_constraintTop_toTopOf="@+id/profileImageHeader" />
+        app:layout_constraintStart_toEndOf="@+id/profilePictureHeader"
+        app:layout_constraintTop_toTopOf="@+id/profilePictureHeader"
+        tools:text="H2SO4-1191" />
 
     <TextView
-        android:id="@+id/emailHeader"
+        android:id="@+id/fullNameHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:fontFamily="sans-serif-medium"
         android:textColor="@color/black"
         android:textSize="14sp"
         android:textStyle="italic"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/profileImageHeader"
+        app:layout_constraintStart_toEndOf="@+id/profilePictureHeader"
         app:layout_constraintTop_toBottomOf="@+id/userNameHeader"
         app:layout_constraintVertical_bias="0.0"
-        tools:text="H2SO4.1191@gmail.com" />
+        tools:text="Mustafa Muhammad" />
 
     <ImageView
-        android:id="@+id/profileImageHeader"
+        android:id="@+id/profilePictureHeader"
         android:layout_width="100dp"
         android:layout_height="100dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="8dp"
+        android:foregroundTint="#000000"
+        android:scaleType="fitXY"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.012"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@drawable/baseline_account_box_24" />
-
-    <Button
-        android:id="@+id/logHeader"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:background="#00FFFFFF"
-        android:foreground="@drawable/baseline_login_24"
-        android:foregroundTint="#000000"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
+        tools:srcCompat="@drawable/baseline_account_box_24" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

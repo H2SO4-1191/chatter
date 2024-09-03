@@ -22,6 +22,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Base64
 import android.util.DisplayMetrics
+import android.view.LayoutInflater
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.AdapterView
@@ -54,6 +55,7 @@ class SignupActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private val newChatter = Chatter(null, null, null, null, null, null, null, null)
     private lateinit var ui: ActivitySignupBinding
+    private val scope = MainScope()
     private val size = DisplayMetrics()
     private var steps = 1
     private var isAnimating: Boolean = false
@@ -64,10 +66,15 @@ class SignupActivity : AppCompatActivity() {
         ui = ActivitySignupBinding.inflate(layoutInflater)
         setContentView(ui.root)
         auth = FirebaseAuth.getInstance()
+        database = FirebaseFirestore.getInstance()
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
         windowManager.defaultDisplay.getRealMetrics(size)
         pen()
         setListeners()
+    }
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
     private fun pen() {
         hint("The pen will be your guide, tap it when guidance is needed.", "Hint")
@@ -159,7 +166,7 @@ class SignupActivity : AppCompatActivity() {
                     } else {
                         if(target.text.toString().matches(regex) && !isAnimating && !next.isVisible) {
                             if(unique) {
-                                MainScope().launch {
+                                scope.launch {
                                     if(isAvailable(target.text.toString(), type, true)) {
                                         setThings(target)
                                         step(next, co)
@@ -363,7 +370,7 @@ class SignupActivity : AppCompatActivity() {
             hint("Invalid $type format.", "Error")
         }
         if(unique) {
-            MainScope().launch {
+            scope.launch {
                 if(!isAvailable(input, type, false)) {
                     pass = false
                     hint("$type is already registered.", "Error")
@@ -431,17 +438,6 @@ class SignupActivity : AppCompatActivity() {
         )
         if(false) super.onBackPressed()
     }
-    private fun showYesNoDialog(context: Context, message: String, onYes: () -> Unit, onNo: () -> Unit) {
-        AlertDialog.Builder(context)
-            .setMessage(message)
-            .setPositiveButton("Yes") { _, _ ->
-                onYes()
-            }
-            .setNegativeButton("No") { _, _ ->
-                onNo()
-            }
-            .show()
-    }
     private fun hint(message: String, type: String?) { Pop.pop(this, "$type: $message") }
     private fun checkAndSendVerificationEmail(email: String, password: String) {
         auth.createUserWithEmailAndPassword(email, password)
@@ -475,7 +471,20 @@ class SignupActivity : AppCompatActivity() {
                 else text.inputType = 129
             }
         }
+        fun showYesNoDialog(context: Context, message: String, onYes: () -> Unit, onNo: () -> Unit) {
+            val dialogView = LayoutInflater.from(context).inflate(R.layout.yes_no, null)
+            dialogView.findViewById<TextView>(R.id.dialogMessage).text = message
+            val dialog = AlertDialog.Builder(context).setView(dialogView).create()
+            dialog.window?.setBackgroundDrawableResource(R.drawable.input_field)
+            dialogView.findViewById<Button>(R.id.btnYes).setOnClickListener {
+                onYes()
+                dialog.dismiss()
+            }
+            dialogView.findViewById<Button>(R.id.btnNo).setOnClickListener {
+                onNo()
+                dialog.dismiss()
+            }
+            dialog.show()
+        }
     }
 }
-
-//        return auth.currentUser?.isEmailVerified ?: false        //

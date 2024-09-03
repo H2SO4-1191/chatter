@@ -12,7 +12,8 @@
     <string name="rate">Rate</string>
     <string name="open">Open Navigation Bar</string>
     <string name="close">Close Navigation Bar</string>
-    <string name="email">Username, Email or Phone number:</string>
+    <string name="email">Email:</string>
+    <string name="emailOr">Username, Email or Phone number:</string>
     <string name="password">Password:</string>
     <string name="chatter_welcomes_you">Chatter welcomes you</string>
     <string name="not_a_member_in_chatter_sign_up_right_now">Not a member in Chatter? Sign-Up right now</string>
@@ -26,4 +27,20 @@
     <string name="not_logged_in">Not logged in</string>
     <string name="first_amp_last_name"><![CDATA[First & Last Name:]]></string>
     <string name="forgot_your_password">Forgot your password?</string>
+    <string name="verify">Verify</string>
+    <string name="if_you">If you didn\'t recieve an email click the verify button, click it again once you have verified your account to finish verification process.</string>
+    <string name="_verifyEmail">Please check the inbox of your email</string>
+    <string name="verifyEmail_">and verify your account to use Chatter, otherwise your account will be suspended.</string>
+    <string name="chats">Chats</string>
+    <string name="chatters">Chatters</string>
+    <string name="account">Account</string>
+    <string name="your_chatter_account">Your Chatter account</string>
+    <string name="chatter_account">Chatter Account</string>
+    <string name="chat_chatters">Chat Chatters</string>
+    <string name="chatter_ai">Chatter AI</string>
+    <string name="system">System</string>
+    <string name="log_out">Log-Out</string>
+    <string name="report">Report</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>

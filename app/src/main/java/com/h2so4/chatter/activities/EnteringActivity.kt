@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.view.marginRight
-import androidx.core.widget.addTextChangedListener
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
@@ -33,6 +32,7 @@ class EnteringActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseFirestore
     private lateinit var chatter: Chatter
+    private val scope = MainScope()
     private var signedUp: Boolean? = null
     private val size = DisplayMetrics()
     private var user: String? = null
@@ -55,7 +55,7 @@ class EnteringActivity : AppCompatActivity() {
         setSignUpPressed()
         login()
         SignupActivity.setShowPassword(ui.showPassword, ui.passwordField)
-        MainScope().launch { setForgotPassword() }
+        scope.launch { setForgotPassword() }
     }
     private fun setChangeListener(target: TextView) {
         val handler = Handler(Looper.getMainLooper())
@@ -67,10 +67,12 @@ class EnteringActivity : AppCompatActivity() {
             }
             override fun afterTextChanged(s: Editable?) {
                 runnable = Runnable {
-                    MainScope().launch {
-                        if (target == ui.inputField) fetchLogin(target.text.toString().uppercase())
-                        else tryLogin(target.text.toString(), false)
-                        if(target.text.toString().isBlank()) loginDoorMove("dismiss")
+                    scope.launch {
+                        if(!ui.progressBar.isVisible) {
+                            if (target == ui.inputField) fetchLogin(target.text.toString().uppercase())
+                            else tryLogin(target.text.toString(), false)
+                            if(target.text.toString().isBlank()) loginDoorMove("dismiss")
+                        }
                     }
                 }
                 handler.postDelayed(runnable!!, 1500)
@@ -145,7 +147,7 @@ class EnteringActivity : AppCompatActivity() {
                 errorShake(ui.inputField)
                 hint("Enter a valid login first.")
             } else {
-                MainScope().launch {
+                scope.launch {
                     try {
                         ui.forgotPassword.isEnabled = false
                         ui.progressBar.visibility = View.VISIBLE
@@ -173,13 +175,23 @@ class EnteringActivity : AppCompatActivity() {
                 duration = 500
                 translationY(0f)
             }.start()
+            ui.showPassword.animate().apply {
+                duration = 500
+                translationY(0f)
+            }.start()
+            ui.forgotPassword.animate().apply {
+                duration = 500
+                translationY(0f)
+            }.start()
             ui.passwordField.animate().apply {
                 duration = 500
                 translationY(0f)
             }.withEndAction {
                 ui.loginDoor.visibility = View.INVISIBLE
                 val loggedIntent = Intent(this, LoggedActivity::class.java)
-                loggedIntent.putExtra("Chatter", chatter)
+                loggedIntent.putExtra("logged", false)
+                loggedIntent.putExtra("chatter", chatter)
+                loggedIntent.putExtra("password", ui.passwordField.text.toString())
                 startActivity(loggedIntent)
                 finish()
             }.start()
