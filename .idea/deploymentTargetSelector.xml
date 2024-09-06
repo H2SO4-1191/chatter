@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-09-01T16:24:50.754819200Z">
+        <DropdownSelection timestamp="2024-09-05T11:22:57.874175900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\H2SO4\.android\avd\Medium_Phone_API_UpsideDownCakePrivacySandbox.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=78KVB19C13008890" />
             </handle>
           </Target>
         </DropdownSelection>

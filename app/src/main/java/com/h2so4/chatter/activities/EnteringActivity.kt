@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.view.marginRight
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
@@ -22,9 +23,10 @@ import com.h2so4.chatter.databinding.ActivityEnteringBinding
 import com.h2so4.chatter.models.Chatter
 import com.h2so4.chatter.models.Pop
 import com.h2so4.chatter.models.PreRegex
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class EnteringActivity : AppCompatActivity() {
 
@@ -32,7 +34,6 @@ class EnteringActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseFirestore
     private lateinit var chatter: Chatter
-    private val scope = MainScope()
     private var signedUp: Boolean? = null
     private val size = DisplayMetrics()
     private var user: String? = null
@@ -55,7 +56,7 @@ class EnteringActivity : AppCompatActivity() {
         setSignUpPressed()
         login()
         SignupActivity.setShowPassword(ui.showPassword, ui.passwordField)
-        scope.launch { setForgotPassword() }
+        lifecycleScope.launch(Dispatchers.IO) { setForgotPassword() }
     }
     private fun setChangeListener(target: TextView) {
         val handler = Handler(Looper.getMainLooper())
@@ -67,11 +68,11 @@ class EnteringActivity : AppCompatActivity() {
             }
             override fun afterTextChanged(s: Editable?) {
                 runnable = Runnable {
-                    scope.launch {
+                    lifecycleScope.launch(Dispatchers.IO) {
                         if(!ui.progressBar.isVisible) {
-                            if (target == ui.inputField) fetchLogin(target.text.toString().uppercase())
-                            else tryLogin(target.text.toString(), false)
-                            if(target.text.toString().isBlank()) loginDoorMove("dismiss")
+                            if (target == ui.inputField) withContext(Dispatchers.Main) { fetchLogin(target.text.toString().uppercase()) }
+                            else withContext(Dispatchers.Main) { tryLogin(target.text.toString(), false) }
+                            if(target.text.toString().isBlank()) withContext(Dispatchers.Main) { loginDoorMove("dismiss") }
                         }
                     }
                 }
@@ -89,10 +90,10 @@ class EnteringActivity : AppCompatActivity() {
         if(input.isBlank()) return false
         val type = getType(input)
         if (type == "Invalid") {
-            hint("Invalid login format")
             user = null
             email = null
             auth.signOut()
+            hint("Invalid login format")
             loginDoorMove("dismiss")
             errorShake(ui.inputField)
             return false
@@ -101,10 +102,10 @@ class EnteringActivity : AppCompatActivity() {
         val search = database.collection("Chatters").whereEqualTo(type, input).get().await()
         ui.progressBar.visibility = View.INVISIBLE
         if (search.isEmpty) {
-            hint("No login found.")
             user = null
             email = null
             auth.signOut()
+            hint("No login found.")
             loginDoorMove("dismiss")
             errorShake(ui.inputField)
             return false
@@ -147,7 +148,7 @@ class EnteringActivity : AppCompatActivity() {
                 errorShake(ui.inputField)
                 hint("Enter a valid login first.")
             } else {
-                scope.launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         ui.forgotPassword.isEnabled = false
                         ui.progressBar.visibility = View.VISIBLE
@@ -189,9 +190,9 @@ class EnteringActivity : AppCompatActivity() {
             }.withEndAction {
                 ui.loginDoor.visibility = View.INVISIBLE
                 val loggedIntent = Intent(this, LoggedActivity::class.java)
+                loggedIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 loggedIntent.putExtra("logged", false)
                 loggedIntent.putExtra("chatter", chatter)
-                loggedIntent.putExtra("password", ui.passwordField.text.toString())
                 startActivity(loggedIntent)
                 finish()
             }.start()

@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
                 ui.chatter.isEnabled = true
                 val signingIntent = Intent(this, EnteringActivity::class.java)
                 startActivity(signingIntent)
+                finish()
             }.start()
         }
     }

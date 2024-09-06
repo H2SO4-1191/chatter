@@ -35,12 +35,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.h2so4.chatter.R
+import com.h2so4.chatter.adapters.ChattersAdapter
 import com.h2so4.chatter.databinding.ActivitySignupBinding
 import com.h2so4.chatter.models.Chatter
-import com.h2so4.chatter.models.Data.countries
+import com.h2so4.chatter.models.Codes.countries
 import com.h2so4.chatter.models.Pop
 import com.h2so4.chatter.models.PreRegex
 import java.io.ByteArrayOutputStream
@@ -55,7 +57,6 @@ class SignupActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private val newChatter = Chatter(null, null, null, null, null, null, null, null)
     private lateinit var ui: ActivitySignupBinding
-    private val scope = MainScope()
     private val size = DisplayMetrics()
     private var steps = 1
     private var isAnimating: Boolean = false
@@ -72,10 +73,7 @@ class SignupActivity : AppCompatActivity() {
         pen()
         setListeners()
     }
-    override fun onDestroy() {
-        scope.cancel()
-        super.onDestroy()
-    }
+
     private fun pen() {
         hint("The pen will be your guide, tap it when guidance is needed.", "Hint")
         penHint(ui.fullNameField)
@@ -166,11 +164,13 @@ class SignupActivity : AppCompatActivity() {
                     } else {
                         if(target.text.toString().matches(regex) && !isAnimating && !next.isVisible) {
                             if(unique) {
-                                scope.launch {
-                                    if(isAvailable(target.text.toString(), type, true)) {
-                                        setThings(target)
-                                        step(next, co)
-                                    } else hint("$type is already registered.", "Error")
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    withContext(Dispatchers.Main) {
+                                        if(isAvailable(target.text.toString(), type, true)) {
+                                            setThings(target)
+                                            step(next, co)
+                                        } else hint("$type is already registered.", "Error")
+                                    }
                                 }
                             } else {
                                 setThings(target)
@@ -292,28 +292,7 @@ class SignupActivity : AppCompatActivity() {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
                 val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                val size = bitmap.width.coerceAtMost(bitmap.height)
-                val xOffset = (bitmap.width - size) / 2f
-                val yOffset = (bitmap.height - size) / 2f
-                val shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-                val matrix = Matrix()
-                matrix.setTranslate(-xOffset, -yOffset)
-                shader.setLocalMatrix(matrix)
-                val paint = Paint().apply {
-                    isAntiAlias = true
-                    setShader(shader)
-                }
-                val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(output)
-                val radius = size / 2f
-                canvas.drawCircle(radius, radius, radius, paint)
-                val strokePaint = Paint().apply {
-                    isAntiAlias = true
-                    color = ContextCompat.getColor(this@SignupActivity, R.color.seriousYellow)
-                    style = Paint.Style.STROKE
-                    strokeWidth = 25f
-                }
-                canvas.drawCircle(radius, radius, radius - 5f, strokePaint)
+                val output = ChattersAdapter.getCircleBitmap(bitmap, this)
                 ui.profilePicture.foreground = BitmapDrawable(resources, output)
                 ui.profilePicture.foregroundTintList = null
                 newChatter.profilePicture = encodeImage(bitmap)
@@ -370,7 +349,7 @@ class SignupActivity : AppCompatActivity() {
             hint("Invalid $type format.", "Error")
         }
         if(unique) {
-            scope.launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 if(!isAvailable(input, type, false)) {
                     pass = false
                     hint("$type is already registered.", "Error")
@@ -410,7 +389,7 @@ class SignupActivity : AppCompatActivity() {
             "Gender" to newChatter.gender,
             "ProfilePicture" to newChatter.profilePicture
             )
-        database.collection("Chatters").document(newChatter.username!!)
+        database.collection("Chatters").document(newChatter.username?.uppercase()!!)
             .set(newChatterInfo)
             .addOnSuccessListener { wayBack(true) }
             .addOnFailureListener { e ->

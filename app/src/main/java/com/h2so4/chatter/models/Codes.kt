@@ -1,6 +1,6 @@
 package com.h2so4.chatter.models
 
-object Data {
+object Codes {
     val countries= hashMapOf(
         "-KEY-" to "",
         "AND" to "+376",
@@ -94,7 +94,6 @@ object Data {
         "IRL" to "+353",
         "IRQ" to "+964",
         "IMN" to "+44",
-        "ISR" to "+972",
         "ITA" to "+39",
         "JAM" to "+1876",
         "JPN" to "+81",
