@@ -276,11 +276,11 @@ class SignupActivity : AppCompatActivity() {
                 ui.profilePicture.startAnimation(AnimationUtils.loadAnimation(this@SignupActivity, R.anim.fade_in))
             }.withEndAction {
                 ui.profilePicture.visibility = View.VISIBLE
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
             }.start()
         }
     }
     private fun setPP() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
         val intent = Intent(Intent.ACTION_PICK)
         intent.type = "image/*"
         startActivityForResult(intent, 1)
@@ -292,8 +292,7 @@ class SignupActivity : AppCompatActivity() {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
                 val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                val output = ChattersAdapter.getCircleBitmap(bitmap, this)
-                ui.profilePicture.foreground = BitmapDrawable(resources, output)
+                ui.profilePicture.foreground = BitmapDrawable(resources, bitmap)
                 ui.profilePicture.foregroundTintList = null
                 newChatter.profilePicture = encodeImage(bitmap)
                 ui.pen.setOnLongClickListener { false }

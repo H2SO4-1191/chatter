@@ -43,5 +43,8 @@
     <string name="report">Report</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    <string name="message">Message...</string>
+    <string name="message">Message…</string>
+    <string name="no_chatters_to_chat_with_yet">No chatters to chat with yet.</string>
+    <string name="search_chatters">Search Chatters…</string>
+    <string name="no_chatter_was_found">No matching Chatters were found.</string>
 </resources>

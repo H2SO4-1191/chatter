@@ -287,20 +287,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/fullNameField" />
 
-    <Button
-        android:id="@+id/profilePicture"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/picContainer"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@null"
-        android:backgroundTint="@null"
-        android:foregroundTint="@color/seriousYellow"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@+id/progressBar"
-        app:layout_constraintEnd_toEndOf="@+id/progressBar"
-        app:layout_constraintStart_toStartOf="@+id/progressBar"
-        app:layout_constraintTop_toTopOf="@+id/progressBar"
-        tools:foreground="@drawable/baseline_account_circle_24"
-        tools:visibility="visible" />
+        app:cardCornerRadius="50dp"
+        app:cardBackgroundColor="#00000000"
+        app:layout_constraintStart_toStartOf="@id/progressBar"
+        app:layout_constraintEnd_toEndOf="@id/progressBar"
+        app:layout_constraintTop_toTopOf="@id/progressBar"
+        app:layout_constraintBottom_toBottomOf="@id/progressBar">
+
+        <ImageView
+            android:id="@+id/profilePicture"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@null"
+            android:backgroundTint="@null"
+            android:foregroundTint="@color/seriousYellow"
+            android:scaleType="fitXY"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/picContainer"
+            app:layout_constraintEnd_toEndOf="@+id/picContainer"
+            app:layout_constraintStart_toStartOf="@+id/picContainer"
+            app:layout_constraintTop_toTopOf="@+id/picContainer"
+            tools:foreground="@drawable/baseline_account_circle_24"
+            tools:visibility="visible" />
+
+    </androidx.cardview.widget.CardView>
 
     <Spinner
         android:id="@+id/countryCode"

@@ -5,18 +5,22 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.os.Bundle
-import android.util.Base64
+import android.os.Handler
+import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +33,7 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.messaging.FirebaseMessaging
 import com.h2so4.chatter.R
 import com.h2so4.chatter.adapters.ChattersAdapter
@@ -62,6 +67,7 @@ class LoggedActivity : AppCompatActivity() {
         windowManager.defaultDisplay.getRealMetrics(size)
         database = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
+        manageOtherLayouts()
         lifecycleScope.launch(Dispatchers.IO) { signedIn() }
     }
 
@@ -83,7 +89,7 @@ class LoggedActivity : AppCompatActivity() {
             storeData()
         }
         if(auth.currentUser?.isEmailVerified == true) {
-            pass()
+            withContext(Dispatchers.Main) { pass() }
             getToken()
         } else verification()
     }
@@ -92,6 +98,7 @@ class LoggedActivity : AppCompatActivity() {
         setDrawer()
         setChatterHeaderInfo()
         setChattersAdapter()
+        setAddChatters()
     }
     private fun storeData() {
         val editor = shared.edit()
@@ -106,9 +113,10 @@ class LoggedActivity : AppCompatActivity() {
     }
     private fun setChattersAdapter() {
         lifecycleScope.launch(Dispatchers.IO) {
-            chatChatters = ArrayList<Chatter>()
-            val search = database.collection("Chatters").document(chatter?.username!!)
-                .collection("ChatChatters").get().await()
+            chatChatters = ArrayList()
+            withContext(Dispatchers.Main) { load(true) }
+            val search = database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").get().await()
+            withContext(Dispatchers.Main) { load(false) }
             if (!search.isEmpty) {
                 for (i in search) {
                     chatChatters.add(
@@ -126,33 +134,121 @@ class LoggedActivity : AppCompatActivity() {
                         chatIntent.putExtra("chatter" , chatter)
                         startActivity(chatIntent)
                     }
-                    ui.chatChattersLayout.chattersList.adapter = chattersAdapter
-                    ui.chatChattersLayout.chattersList.layoutManager = LinearLayoutManager(this@LoggedActivity)
-                    ui.chatChattersLayout.chattersList.setHasFixedSize(true)
+                    ui.chatChattersInclude.chattersList.adapter = chattersAdapter
+                    ui.chatChattersInclude.chattersList.layoutManager = LinearLayoutManager(this@LoggedActivity)
+                    ui.chatChattersInclude.chattersList.setHasFixedSize(true)
                 }
             } else {
-                withContext(Dispatchers.Main) { hint("LLL") }
+                withContext(Dispatchers.Main) { ui.chatChattersInclude.noChatters.visibility = View.VISIBLE }
             }
         }
     }
+    private fun setAddChatters() {
+        var toggled = false
+        val add = ui.chatChattersInclude.searchChattersButton
+        val layout = ui.chatChattersInclude.searchChattersInclude.searchChattersLayout
+        val searchBar = ui.chatChattersInclude.searchChattersInclude.searchBar
+        fun searchInput(input: String) {
+            val foundChatters = ArrayList<Chatter>()
+            ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+            var search: QuerySnapshot?
+            if(input.isNotBlank()) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    withContext(Dispatchers.Main) {
+                        load(true)
+                        ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.INVISIBLE
+                    }
+                    search = database.collection("Chatters").get().await()
+                    withContext(Dispatchers.Main) { load(false) }
+                    for(i in search!!) {
+                        if(i.getString("Username")?.contains(input) == true && i.getString("Username") != chatter?.username) {
+                            foundChatters.add(
+                                Chatter(
+                                    fullName = i.getString("FullName"),
+                                    username = i.getString("Username"),
+                                    email = i.getString("Email"),
+                                    phoneNumber = i.getString("PhoneNumber"),
+                                    password = null,
+                                    birth = i.getString("Birth"),
+                                    gender = i.getString("Gender"),
+                                    profilePicture = i.getString("ProfilePicture")
+                                )
+                            )
+                        }
+                    }
+                    if(foundChatters.isNotEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            val foundChattersAdapter = ChattersAdapter(this@LoggedActivity, foundChatters) { chatter ->
+                                //profileActivity
+                            }
+                            ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = foundChattersAdapter
+                            ui.chatChattersInclude.searchChattersInclude.foundChatters.layoutManager = LinearLayoutManager(this@LoggedActivity)
+                            ui.chatChattersInclude.searchChattersInclude.foundChatters.setHasFixedSize(true)
+                        }
+                    } else withContext(Dispatchers.Main) { ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.VISIBLE }
+                }
+            } else {
+                search = null
+                foundChatters.clear()
+                ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+                ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.INVISIBLE
+            }
+        }
+        add.setOnClickListener {
+            if(!toggled) {
+                toggled = true
+                add.isEnabled = false
+                layout.visibility = View.VISIBLE
+                add.animate().apply {
+                    duration = 500
+                    rotation(-405f)
+                }.start()
+                layout.animate().apply {
+                    duration = 500
+                    translationX(0f)
+                }.withEndAction { add.isEnabled = true }
+            } else {
+                toggled = false
+                add.isEnabled = false
+                add.animate().apply {
+                    duration = 500
+                    rotation(0f)
+                }.start()
+                layout.animate().apply {
+                    duration = 500
+                    translationX(size.widthPixels.toFloat())
+                }.withEndAction {
+                    ui.chatChattersInclude.searchChattersInclude.searchBar.text = null
+                    ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+                    layout.visibility = View.VISIBLE
+                    add.isEnabled = true
+                }.start()
+            }
+        }
+        val handler = Handler(Looper.getMainLooper())
+        var runnable: Runnable? = null
+        searchBar.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                runnable?.let { handler.removeCallbacks(it) }
+            }
+            override fun afterTextChanged(s: Editable?) {
+                runnable = Runnable { searchInput(searchBar.text.toString().trim().uppercase()) }
+                handler.postDelayed(runnable!!, 1500)
+            }
+        })
+    }
     private suspend fun getToken() {
         val token = FirebaseMessaging.getInstance().token.await()
-        updateToken(token)
-    }
-    private suspend fun updateToken(token: String) {
         database.collection("Chatters").document(chatter?.username!!).update("FCMToken", token).await()
     }
     private suspend fun logOut() {
         SignupActivity.showYesNoDialog(this, "Are you certain that you wish to log-out?",
             onYes = {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    withContext(Dispatchers.Main) {
-                        load(true)
-                        onBackPressed()
-                    }
+                    withContext(Dispatchers.Main) { onBackPressed() }
                     database.collection("Chatters").document(chatter?.username!!).update("FCMToken", FieldValue.delete()).await()
                     auth.signOut()
-                    withContext(Dispatchers.Main) { load(false) }
                     shared.edit().clear().apply()
                     startActivity(Intent(this@LoggedActivity, MainActivity::class.java))
                     finish()
@@ -189,7 +285,6 @@ class LoggedActivity : AppCompatActivity() {
         withContext(Dispatchers.Main) {
             val verifyLayoutBinding = ui.verificationLayoutInclude
             val verifyView = ui.verificationLayoutInclude.verificationLayout
-            verifyView.translationY = size.heightPixels.toFloat()
             verifyLayoutBinding.askToVerify.text = "${ContextCompat.getString(this@LoggedActivity, R.string._verifyEmail)} \"${chatter?.email}\" ${ContextCompat.getString(this@LoggedActivity, R.string.verifyEmail_)}"
             verifyView.visibility = View.VISIBLE
             verifyView.animate().apply {
@@ -272,7 +367,11 @@ class LoggedActivity : AppCompatActivity() {
         Pop.pop(this, message)
     }
     private fun load(state: Boolean) {
-        if(state) ui.loading.visibility = View.VISIBLE
-        else ui.loading.visibility = View.INVISIBLE
+        if(state) ui.chatChattersInclude.loadingChatters.visibility = View.VISIBLE
+        else ui.chatChattersInclude.loadingChatters.visibility = View.INVISIBLE
+    }
+    private fun manageOtherLayouts() {
+        ui.verificationLayoutInclude.verificationLayout.translationY = size.heightPixels.toFloat()
+        ui.chatChattersInclude.searchChattersInclude.searchChattersLayout .translationX = size.heightPixels.toFloat()
     }
 }

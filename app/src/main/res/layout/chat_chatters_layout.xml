@@ -6,8 +6,41 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_3">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chattersList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/noChatters"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/no_chatters_to_chat_with_yet"
+        android:textSize="24sp"
+        android:textColor="@color/seriousYellow"
+        android:fontFamily="@font/alike_angular"
+        android:textStyle="italic"
+        android:visibility="invisible"
+        tools:visibility="visible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <include
+        android:id="@+id/searchChattersInclude"
+        layout="@layout/search_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"/>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/searchChatters"
+        android:id="@+id/searchChattersButton"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:backgroundTint="@color/seriousYellowAlpha"
@@ -22,12 +55,18 @@
         app:layout_constraintHorizontal_bias="1"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="32dp"/>
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/chattersList"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+
+    <ProgressBar
+        android:id="@+id/loadingChatters"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/seriousYellow"
+        android:visibility="invisible"
+        tools:visibility="visible"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
