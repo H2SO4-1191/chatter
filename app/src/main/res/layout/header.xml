@@ -16,8 +16,8 @@
         android:textColor="@color/black"
         android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@+id/profilePictureHeader"
-        app:layout_constraintTop_toTopOf="@+id/profilePictureHeader"
+        app:layout_constraintStart_toEndOf="@+id/picContainerHeader"
+        app:layout_constraintTop_toTopOf="@+id/picContainerHeader"
         tools:text="H2SO4-1191" />
 
     <TextView
@@ -30,25 +30,37 @@
         android:textSize="14sp"
         android:textStyle="italic"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/profilePictureHeader"
+        app:layout_constraintStart_toEndOf="@+id/picContainerHeader"
         app:layout_constraintTop_toBottomOf="@+id/userNameHeader"
         app:layout_constraintVertical_bias="0.0"
         tools:text="Mustafa Muhammad" />
 
-    <ImageView
-        android:id="@+id/profilePictureHeader"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_marginStart="4dp"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/picContainerHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:layout_marginBottom="8dp"
-        android:foregroundTint="#000000"
-        android:scaleType="fitXY"
+        app:cardBackgroundColor="@color/seriousYellow"
+        app:cardCornerRadius="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.012"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0"
-        tools:srcCompat="@drawable/baseline_account_box_24" />
+        app:layout_constraintVertical_bias="1.0">
+
+        <ImageView
+            android:id="@+id/profilePictureHeader"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:foregroundTint="#000000"
+            android:scaleType="fitXY"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:srcCompat="@drawable/baseline_account_box_24" />
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

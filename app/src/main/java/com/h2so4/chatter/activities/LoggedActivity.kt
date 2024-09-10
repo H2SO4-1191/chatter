@@ -26,6 +26,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
+import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -58,6 +59,7 @@ class LoggedActivity : AppCompatActivity() {
     private lateinit var chatChatters: ArrayList<Chatter>
     private var size = DisplayMetrics()
     private var chatter: Chatter? = null
+    private var toggled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,33 +73,36 @@ class LoggedActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) { signedIn() }
     }
 
-    private suspend fun signedIn() {
-        if(intent.getBooleanExtra("logged", false)) {
-            chatter = Chatter(
-                fullName = shared.getString("fullName", null),
-                username = shared.getString("username", null),
-                email = shared.getString("email", null),
-                phoneNumber = shared.getString("phoneNumber", null),
-                password = null,
-                birth = shared.getString("birth", null),
-                gender = shared.getString("gender", null),
-                profilePicture = shared.getString("profilePicture", null)
-            )
-        } else {
-            chatter = intent.getParcelableExtra("chatter")
-            withContext(Dispatchers.Main) { hint("Hello, ${chatter?.fullName}.") }
+    private fun signedIn() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            if(intent.getBooleanExtra("logged", false)) {
+                chatter = Chatter(
+                    fullName = shared.getString("fullName", null),
+                    username = shared.getString("username", null),
+                    email = shared.getString("email", null),
+                    phoneNumber = shared.getString("phoneNumber", null),
+                    password = null,
+                    birth = shared.getString("birth", null),
+                    gender = shared.getString("gender", null),
+                    profilePicture = shared.getString("profilePicture", null)
+                )
+            } else {
+                chatter = intent.getParcelableExtra("chatter")
+                withContext(Dispatchers.Main) { hint("Hello, ${chatter?.fullName}.") }
+            }
             storeData()
+            if(auth.currentUser?.isEmailVerified == true) {
+                withContext(Dispatchers.Main) {
+                    pass()
+                    getToken()
+                }
+            } else verification()
         }
-        if(auth.currentUser?.isEmailVerified == true) {
-            withContext(Dispatchers.Main) { pass() }
-            getToken()
-        } else verification()
     }
     private fun pass() {
         ui.verificationLayoutInclude.verificationLayout.visibility = View.GONE
         setDrawer()
         setChatterHeaderInfo()
-        setChattersAdapter()
         setAddChatters()
     }
     private fun storeData() {
@@ -115,36 +120,42 @@ class LoggedActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             chatChatters = ArrayList()
             withContext(Dispatchers.Main) { load(true) }
-            val search = database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").get().await()
-            withContext(Dispatchers.Main) { load(false) }
-            if (!search.isEmpty) {
+            val search: QuerySnapshot? = try { database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").get().await() }
+            catch(e: Exception) { null }
+            if(search?.isEmpty == false) {
+                ui.chatChattersInclude.noChatters.visibility = View.INVISIBLE
                 for (i in search) {
+                    val contact = database.collection("Chatters").document(i.id).get().await()
                     chatChatters.add(
                         Chatter(
-                            username = i.getString("Username"),
-                            profilePicture = i.getString("ProfilePicture"),
-                            gender = i.getString("Gender"),
+                            username = contact.getString("Username"),
+                            profilePicture = contact.getString("ProfilePicture"),
+                            gender = contact.getString("Gender"),
                             fullName = null, email = null, phoneNumber = null, password = null, birth = null
                         )
                     )
                 }
                 withContext(Dispatchers.Main) {
-                    chattersAdapter = ChattersAdapter(this@LoggedActivity, chatChatters) { chatter ->
+                    chattersAdapter = ChattersAdapter(this@LoggedActivity, chatChatters) { receiver ->
                         val chatIntent = Intent(this@LoggedActivity, ChatActivity::class.java)
-                        chatIntent.putExtra("chatter" , chatter)
+                        chatIntent.putExtra("sender" , chatter)
+                        chatIntent.putExtra("receiver" , receiver)
                         startActivity(chatIntent)
                     }
                     ui.chatChattersInclude.chattersList.adapter = chattersAdapter
                     ui.chatChattersInclude.chattersList.layoutManager = LinearLayoutManager(this@LoggedActivity)
                     ui.chatChattersInclude.chattersList.setHasFixedSize(true)
+                    load(false)
                 }
             } else {
-                withContext(Dispatchers.Main) { ui.chatChattersInclude.noChatters.visibility = View.VISIBLE }
+                withContext(Dispatchers.Main) {
+                    ui.chatChattersInclude.noChatters.visibility = View.VISIBLE
+                    load(false)
+                }
             }
         }
     }
     private fun setAddChatters() {
-        var toggled = false
         val add = ui.chatChattersInclude.searchChattersButton
         val layout = ui.chatChattersInclude.searchChattersInclude.searchChattersLayout
         val searchBar = ui.chatChattersInclude.searchChattersInclude.searchBar
@@ -161,25 +172,24 @@ class LoggedActivity : AppCompatActivity() {
                     search = database.collection("Chatters").get().await()
                     withContext(Dispatchers.Main) { load(false) }
                     for(i in search!!) {
-                        if(i.getString("Username")?.contains(input) == true && i.getString("Username") != chatter?.username) {
+                        if(i.id.contains(input) && i.id != chatter?.username) {
                             foundChatters.add(
                                 Chatter(
-                                    fullName = i.getString("FullName"),
                                     username = i.getString("Username"),
-                                    email = i.getString("Email"),
-                                    phoneNumber = i.getString("PhoneNumber"),
-                                    password = null,
-                                    birth = i.getString("Birth"),
                                     gender = i.getString("Gender"),
-                                    profilePicture = i.getString("ProfilePicture")
+                                    profilePicture = i.getString("ProfilePicture"),
+                                    fullName = null, email = null, phoneNumber = null, password = null, birth = null
                                 )
                             )
                         }
                     }
                     if(foundChatters.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
-                            val foundChattersAdapter = ChattersAdapter(this@LoggedActivity, foundChatters) { chatter ->
-                                //profileActivity
+                            val foundChattersAdapter = ChattersAdapter(this@LoggedActivity, foundChatters) { account ->
+                                val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
+                                profileIntent.putExtra("visitor", chatter)
+                                profileIntent.putExtra("account", account)
+                                startActivity(profileIntent)
                             }
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = foundChattersAdapter
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.layoutManager = LinearLayoutManager(this@LoggedActivity)
@@ -241,6 +251,13 @@ class LoggedActivity : AppCompatActivity() {
     private suspend fun getToken() {
         val token = FirebaseMessaging.getInstance().token.await()
         database.collection("Chatters").document(chatter?.username!!).update("FCMToken", token).await()
+    }
+    private fun chatterAccount() {
+        onBackPressed()
+        val profileIntent = Intent(this, ProfileActivity::class.java)
+        profileIntent.putExtra("visitor", chatter)
+        profileIntent.putExtra("account", chatter)
+        startActivity(profileIntent)
     }
     private suspend fun logOut() {
         SignupActivity.showYesNoDialog(this, "Are you certain that you wish to log-out?",
@@ -317,24 +334,14 @@ class LoggedActivity : AppCompatActivity() {
         drawerInfo.findViewById<TextView>(R.id.userNameHeader).text = chatter?.username
         drawerInfo.findViewById<TextView>(R.id.fullNameHeader).text = chatter?.fullName
         val profilePicture = drawerInfo.findViewById<ImageView>(R.id.profilePictureHeader)
-        if(!chatter?.profilePicture.isNullOrBlank()) profilePicture.setImageBitmap(getRoundedCornerBitmap(ChattersAdapter.decodeImage(chatter?.profilePicture!!)))
+        if(!chatter?.profilePicture.isNullOrBlank()) profilePicture.setImageBitmap(ChattersAdapter.decodeImage(chatter?.profilePicture!!))
         else {
             when(chatter?.gender){
                 "Male" -> profilePicture.setImageResource(R.drawable.male_user_icon)
                 else -> profilePicture.setImageResource(R.drawable.female_user_icon)
             }
+            profilePicture.background = null
         }
-    }
-    private fun getRoundedCornerBitmap(bitmap: Bitmap): Bitmap {
-        val output = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(output)
-        val paint = Paint().apply {
-            isAntiAlias = true
-            shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-        }
-        val rect = RectF(0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat())
-        canvas.drawRoundRect(rect, 25f, 25f, paint)
-        return output
     }
     private fun setDrawer() {
         drawerLayout = ui.drawerLayout
@@ -347,6 +354,7 @@ class LoggedActivity : AppCompatActivity() {
         navigationView.setNavigationItemSelectedListener { menuItem ->
             lifecycleScope.launch(Dispatchers.IO) {
                 when(menuItem.title) {
+                    "Chatter Account" -> chatterAccount()
                     "Log-Out" -> withContext(Dispatchers.Main) { logOut() }
                     else -> withContext(Dispatchers.Main) { hint(menuItem.title.toString()) }
                 }
@@ -361,7 +369,24 @@ class LoggedActivity : AppCompatActivity() {
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")
     override fun onBackPressed() {
         if(drawerLayout.isDrawerOpen(GravityCompat.START)) drawerLayout.closeDrawer(GravityCompat.START)
-        super.onBackPressed()
+        else if(ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.isVisible) {
+            toggled = false
+            ui.chatChattersInclude.searchChattersButton.isEnabled = false
+            ui.chatChattersInclude.searchChattersButton.animate().apply {
+                duration = 500
+                rotation(0f)
+            }.start()
+            ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.animate().apply {
+                duration = 500
+                translationX(size.widthPixels.toFloat())
+            }.withEndAction {
+                ui.chatChattersInclude.searchChattersInclude.searchBar.text = null
+                ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+                ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.visibility = View.VISIBLE
+                ui.chatChattersInclude.searchChattersButton.isEnabled = true
+            }.start()
+        }
+        else super.onBackPressed()
     }
     private fun hint(message: String) {
         Pop.pop(this, message)
@@ -373,5 +398,23 @@ class LoggedActivity : AppCompatActivity() {
     private fun manageOtherLayouts() {
         ui.verificationLayoutInclude.verificationLayout.translationY = size.heightPixels.toFloat()
         ui.chatChattersInclude.searchChattersInclude.searchChattersLayout .translationX = size.heightPixels.toFloat()
+    }
+    override fun onResume() {
+        super.onResume()
+        if(auth.currentUser?.isEmailVerified == true) {
+            setChatterHeaderInfo()
+            setChattersAdapter()
+        }
+        storeData()
+        chatter = Chatter(
+            fullName = shared.getString("fullName", null),
+            username = shared.getString("username", null),
+            email = shared.getString("email", null),
+            phoneNumber = shared.getString("phoneNumber", null),
+            password = null,
+            birth = shared.getString("birth", null),
+            gender = shared.getString("gender", null),
+            profilePicture = shared.getString("profilePicture", null)
+        )
     }
 }

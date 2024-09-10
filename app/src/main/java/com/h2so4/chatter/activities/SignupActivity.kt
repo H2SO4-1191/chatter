@@ -104,15 +104,15 @@ class SignupActivity : AppCompatActivity() {
     }
     private fun penHint(target: View) {
         val hint: String = when(target){
-            ui.fullNameField -> "Full name has to be in the form of \"Firstname Lastname\".\ne.g: Mustafa Muhammad."
-            ui.userNameField -> "Username has to be unique, over 3 characters and have no spaces.\ne.g: H2SO4-1191."
-            ui.emailField -> "Email has to be unique and in the form of an actual email address.\ne.g: example@example.example."
-            ui.phoneNumberField -> "Phone number has to be unique, without spaces and in the form of an actual phone number with \'+\' and country code so do not write the trunk prefix (the first \'0\').\n-Tap the map for country codes.\ne.g: +964??????????."
-            ui.passwordField -> "Password has to of be 6 characters or more.\ne.g: 1q2w3e."
-            ui.confirmPasswordField -> "Confirm password has to match the password."
-            ui.birth -> "Tap the Birth field and pick your birth from the calender, tap the year to scroll through years faster.\ne.g: 07/01/2004"
-            ui.profilePicture -> "Tap on the circle to add a profile picture, or hold the pen and skip it."
-            else -> "Tap on one of the buttons to choose your gender, male or female."
+            ui.fullNameField -> ContextCompat.getString(this, R.string.full_name_hint)
+            ui.userNameField -> ContextCompat.getString(this, R.string.username_hint)
+            ui.emailField -> ContextCompat.getString(this, R.string.email_hint)
+            ui.phoneNumberField -> ContextCompat.getString(this, R.string.phone_hint)
+            ui.passwordField -> ContextCompat.getString(this, R.string.password_hint)
+            ui.confirmPasswordField -> ContextCompat.getString(this, R.string.confirm_password_hint)
+            ui.birth -> ContextCompat.getString(this, R.string.birth_hint)
+            ui.profilePicture -> ContextCompat.getString(this, R.string.profile_picture_hint)
+            else -> ContextCompat.getString(this, R.string.gender_hint)
         }
         ui.pen.setOnClickListener { hint(hint, "Hint") }
     }
@@ -125,8 +125,7 @@ class SignupActivity : AppCompatActivity() {
         setShowPassword(ui.showPassword, ui.passwordField)
         setShowPassword(ui.showConfirmPassword, ui.confirmPasswordField)
         infoChecker(ui.passwordField, PreRegex.password, ui.confirmPasswordField)
-        ui.birth.setOnFocusChangeListener { _, hasFocus -> if(hasFocus) pickDate() }
-        ui.birth.setOnClickListener { pickDate() }
+        ui.birth.setOnClickListener { pickDate(ui.birth, this) }
         infoChecker(ui.confirmPasswordField, "".toRegex(), ui.birth)
         infoChecker(ui.birth, PreRegex.birth, ui.maleButton)
         ui.maleButton.setOnClickListener { gender(ui.maleButton) }
@@ -232,20 +231,6 @@ class SignupActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }
-    private fun pickDate() {
-        val calendar = Calendar.getInstance()
-        val dateDialog = DatePickerDialog(this, R.style.CustomDatePickerTheme, { _, selectedYear, selectedMonth, selectedDay ->
-            var selectedDayA = selectedDay.toString()
-            var selectedMonthA = (selectedMonth + 1).toString()
-            if(selectedDayA.length == 1) selectedDayA = "0".plus(selectedDayA)
-            if(selectedMonthA.length == 1) selectedMonthA = "0".plus(selectedMonthA)
-            val date = "${selectedDayA}/${selectedMonthA}/${selectedYear}"
-            ui.birth.setText(date)
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
-        dateDialog.datePicker.maxDate = calendar.timeInMillis
-        dateDialog.window?.setBackgroundDrawableResource(R.drawable.spinner_background)
-        dateDialog.show()
-    }
     private fun gender(pressed: ToggleButton) {
         val pp: Drawable?
         if(pressed == ui.maleButton) {
@@ -304,7 +289,7 @@ class SignupActivity : AppCompatActivity() {
         val previewHeight = bitmap.height*150/bitmap.width
         val previewBitmap = Bitmap.createScaledBitmap(bitmap, previewHeight, 150, false)
         val byteArray = ByteArrayOutputStream()
-        previewBitmap.compress(Bitmap.CompressFormat.JPEG, 50, byteArray)
+        previewBitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArray)
         val bytes = byteArray.toByteArray()
         return Base64.encodeToString(bytes, Base64.DEFAULT)
     }
@@ -443,6 +428,20 @@ class SignupActivity : AppCompatActivity() {
             }
     }
     companion object {
+        fun pickDate(view: TextView, context: Context) {
+            val calendar = Calendar.getInstance()
+            val dateDialog = DatePickerDialog(context, R.style.CustomDatePickerTheme, { _, selectedYear, selectedMonth, selectedDay ->
+                var selectedDayA = selectedDay.toString()
+                var selectedMonthA = (selectedMonth + 1).toString()
+                if(selectedDayA.length == 1) selectedDayA = "0".plus(selectedDayA)
+                if(selectedMonthA.length == 1) selectedMonthA = "0".plus(selectedMonthA)
+                val date = "${selectedDayA}/${selectedMonthA}/${selectedYear}"
+                view.text = date
+            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
+            dateDialog.datePicker.maxDate = calendar.timeInMillis
+            dateDialog.window?.setBackgroundDrawableResource(R.drawable.spinner_background)
+            dateDialog.show()
+        }
         fun setShowPassword(button: Button, text: TextView) {
             button.setOnClickListener {
                 if(text.inputType == 129) text.inputType = 1

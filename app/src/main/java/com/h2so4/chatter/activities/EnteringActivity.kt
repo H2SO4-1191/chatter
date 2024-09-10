@@ -190,7 +190,6 @@ class EnteringActivity : AppCompatActivity() {
             }.withEndAction {
                 ui.loginDoor.visibility = View.INVISIBLE
                 val loggedIntent = Intent(this, LoggedActivity::class.java)
-                loggedIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 loggedIntent.putExtra("logged", false)
                 loggedIntent.putExtra("chatter", chatter)
                 startActivity(loggedIntent)

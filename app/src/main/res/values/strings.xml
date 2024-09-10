@@ -47,4 +47,19 @@
     <string name="no_chatters_to_chat_with_yet">No chatters to chat with yet.</string>
     <string name="search_chatters">Search Chatters…</string>
     <string name="no_chatter_was_found">No matching Chatters were found.</string>
+    <string name="gender">Gender:</string>
+    <string name="chats_with">Chats with:</string>
+    <string name="full_name_hint">Full name has to be in the form of \"Firstname Lastname\".\ne.g: Mustafa Muhammad.</string>
+    <string name="username_hint">Username has to be unique, over 3 characters and have no spaces.\ne.g: H2SO4–1191.</string>
+    <string name="email_hint">Email has to be unique and in the form of an actual email address.\ne.g: example@example.example.</string>
+    <string name="phone_hint">Phone number has to be unique, without spaces and in the form of an actual phone number with \'+\' and country code so do not write the trunk prefix (the first \'0\').\n-Tap the map for country codes.\ne.g: +964??????????.</string>
+    <string name="password_hint">Password has to of be 6 characters or more.\ne.g: 1q2w3e.</string>
+    <string name="confirm_password_hint">Confirm password has to match the password.</string>
+    <string name="birth_hint">Tap the Birth field and pick your birth from the calender, tap the year to scroll through years faster.\ne.g: 07/01/2004</string>
+    <string name="gender_hint">Tap on one of the buttons to choose your gender, male or female.</string>
+    <string name="profile_picture_hint">Tap on the circle to add a profile picture, or hold the pen and skip it.</string>
+    <string name="cannot_be_edited">This field cannot be edited.</string>
+    <string name="edit_mode">Edit Mode.</string>
+    <string name="save_changes">Do you wish to save changes?</string>
+    <string name="discard_changes">Do you wish to discard changes?</string>
 </resources>
