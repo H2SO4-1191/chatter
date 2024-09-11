@@ -2,13 +2,17 @@ package com.h2so4.chatter.activities
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -16,8 +20,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.AggregateField
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
@@ -27,6 +34,7 @@ import com.h2so4.chatter.adapters.ChattersAdapter
 import com.h2so4.chatter.databinding.ActivityProfileBinding
 import com.h2so4.chatter.models.Chatter
 import com.h2so4.chatter.models.Pop
+import com.h2so4.chatter.models.PreRegex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -37,6 +45,9 @@ class ProfileActivity : AppCompatActivity() {
 
     private lateinit var ui: ActivityProfileBinding
     private lateinit var database: FirebaseFirestore
+    private lateinit var shared: SharedPreferences
+    private lateinit var auth: FirebaseAuth
+    private val size = DisplayMetrics()
     private var inEdit = false
     private var visitor: Chatter? = null
     private var account: Chatter? = null
@@ -46,15 +57,22 @@ class ProfileActivity : AppCompatActivity() {
         ui = ActivityProfileBinding.inflate(layoutInflater)
         setContentView(ui.root)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
+        windowManager.defaultDisplay.getRealMetrics(size)
         database = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
         visitor = intent.getParcelableExtra("visitor")
         account = intent.getParcelableExtra("account")
+        ui.changePasswordInclude.changePasswordLayout.translationY = size.heightPixels.toFloat()
+        ui.accountInfoContainer.translationX = size.widthPixels.toFloat()
+        ui.doButton.translationX = size.widthPixels.toFloat()*-1
+        ui.changePasswordInclude.changePasswordLayout.elevation = 10f
         setup()
         knockKnock()
     }
 
     @SuppressLint("SetTextI18n")
     private fun setup() {
+        //Should have used getSharedPreferences when user is viewing his own profile (visitor == account) instead of database, but whatever//
         lifecycleScope.launch(Dispatchers.IO) {
             val info = database.collection("Chatters").document(account?.username!!).get().await()
             account?.fullName = info.getString("FullName")
@@ -65,6 +83,14 @@ class ProfileActivity : AppCompatActivity() {
                 ui.loadingAccount.visibility = View.GONE
                 ui.doButton.visibility = View.VISIBLE
                 ui.accountInfoContainer.visibility = View.VISIBLE
+                ui.doButton.animate().apply {
+                    duration = 500
+                    translationX(0f)
+                }.start()
+                ui.accountInfoContainer.animate().apply {
+                    duration = 500
+                    translationX(0f)
+                }.start()
                 if(!account?.profilePicture.isNullOrBlank()) { ui.profilePictureAccount.setImageBitmap(ChattersAdapter.decodeImage(account?.profilePicture)) }
                 else {
                     when(account?.gender){
@@ -155,8 +181,34 @@ class ProfileActivity : AppCompatActivity() {
     }
     private fun edit() {
         inEdit = !inEdit
+        shared = getSharedPreferences("chatter", Context.MODE_PRIVATE)
         fun change() {
-            //shared & database//
+            ui.loadingAccount.visibility = View.VISIBLE
+            lifecycleScope.launch(Dispatchers.IO) {
+                val newPP: String? = if(ui.profilePictureAccount.drawable != ContextCompat.getDrawable(this@ProfileActivity, R.drawable.male_user_icon) &&
+                    ui.profilePictureAccount.drawable != ContextCompat.getDrawable(this@ProfileActivity, R.drawable.female_user_icon))
+                    SignupActivity.encodeImage(ui.profilePictureAccount.drawable
+                        .toBitmap(ui.profilePictureAccount.drawable.intrinsicWidth, ui.profilePictureAccount.drawable.intrinsicHeight))
+                else null
+                val changes = hashMapOf<String, Any?>(
+                    "Username" to ui.usernameAccountField.text.toString(),
+                    "FullName" to ui.fullNameAccountField.text.toString(),
+                    "Birth" to ui.birthAccountField.text.toString(),
+                    "Gender" to ui.genderAccountField.text.toString(),
+                    "ProfilePicture" to newPP
+                )
+                withContext(Dispatchers.Main) { hint("AAA") }
+                database.collection("Chatters").document(account?.username!!).update(changes).await()
+                withContext(Dispatchers.Main) { hint("ZZZ") }
+                val editor = shared.edit()
+                editor.putString("username", changes["Username"].toString())
+                editor.putString("fullName", changes["FullName"].toString())
+                editor.putString("birth", changes["Birth"].toString())
+                editor.putString("gender", changes["Gender"].toString())
+                editor.putString("profilePicture", newPP)
+                editor.apply()
+                withContext(Dispatchers.Main) { ui.loadingAccount.visibility = View.INVISIBLE }
+            }
         }
         fun revert() {
             ui.usernameAccountField.setText(account?.username)
@@ -174,19 +226,116 @@ class ProfileActivity : AppCompatActivity() {
             }
         }
         fun changePassword() {
-
+            val include = ui.changePasswordInclude
+            val layout = include.changePasswordLayout
+            fun reveal() {
+                if(include.currentPasswordChange.inputType == 129) {
+                    include.currentPasswordChange.inputType = 1
+                    include.newPasswordChange.inputType = 1
+                    include.confirmNewPasswordChange.inputType = 1
+                } else {
+                    include.currentPasswordChange.inputType = 129
+                    include.newPasswordChange.inputType = 129
+                    include.confirmNewPasswordChange.inputType = 129
+                }
+            }
+            fun move(state: Boolean) {
+                if(state) {
+                    layout.visibility = View.VISIBLE
+                    layout.animate().apply {
+                        duration = 500
+                        translationY(0f)
+                    }.start()
+                } else {
+                    layout.animate().apply {
+                        duration = 500
+                        translationY(size.heightPixels.toFloat())
+                    }.withEndAction {
+                        if(include.currentPasswordChange.inputType == 1) reveal()
+                        include.currentPasswordChange.text = null
+                        include.newPasswordChange.text = null
+                        include.confirmNewPasswordChange.text = null
+                        layout.visibility = View.INVISIBLE
+                    }.start()
+                }
+            }
+            fun forgotPassword() {
+                include.forgotPasswordChange.isEnabled = false
+                include.checkingPasswords.visibility = View.VISIBLE
+                include.forgotPasswordChange.setTextColor(ContextCompat.getColor(this, R.color.offWhiteAlpha))
+                lifecycleScope.launch(Dispatchers.IO) {
+                    auth.sendPasswordResetEmail(account?.email!!).await()
+                    withContext(Dispatchers.Main) {
+                        include.checkingPasswords.visibility = View.INVISIBLE
+                        hint("${ContextCompat.getString(this@ProfileActivity, R.string.reset_sent)}${account?.email!!}")
+                        include.forgotPasswordChange.setTextColor(ContextCompat.getColor(this@ProfileActivity, R.color.seriousYellow))
+                        for (count in 59 downTo 0) {
+                            @SuppressLint("SetTextI18n")
+                            include.forgotPasswordChange.text = "00:$count"
+                            delay(1000)
+                        }
+                        include.forgotPasswordChange.isEnabled = true
+                        include.forgotPasswordChange.text = ContextCompat.getString(this@ProfileActivity, R.string.forgot_your_password)
+                    }
+                }
+            }
+            fun submit() {
+                if(include.currentPasswordChange.text.toString().isNotBlank() &&
+                    include.newPasswordChange.text.toString().isNotBlank() &&
+                    include.confirmNewPasswordChange.text.toString().isNotBlank()) {
+                    var correct = true
+                    include.btnSubmit.isEnabled = false
+                    include.checkingPasswords.visibility = View.VISIBLE
+                    layoutIsEnabled(layout, false)
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try { auth.signInWithEmailAndPassword(account?.email!!, include.currentPasswordChange.text.toString()).await() }
+                        catch(e: Exception) {
+                            correct = false
+                            withContext(Dispatchers.Main) {
+                                include.btnSubmit.isEnabled = false
+                                include.checkingPasswords.visibility = View.INVISIBLE
+                                hint(ContextCompat.getString(this@ProfileActivity, R.string.incorrect_password))
+                                layoutIsEnabled(layout, true)
+                            }
+                        }
+                        if(correct) {
+                            if(include.newPasswordChange.text.toString().matches(PreRegex.password)) {
+                                if(include.newPasswordChange.text.toString() == include.confirmNewPasswordChange.text.toString()) {
+                                    auth.currentUser?.updatePassword(include.newPasswordChange.text.toString())?.await()
+                                    withContext(Dispatchers.Main) {
+                                        move(false)
+                                        layoutIsEnabled(layout, true)
+                                        hint(ContextCompat.getString(this@ProfileActivity, R.string.updated_password))
+                                    }
+                                } else withContext(Dispatchers.Main) { hint(ContextCompat.getString(this@ProfileActivity, R.string.passwords_not_match)) }
+                            } else withContext(Dispatchers.Main) { hint(ContextCompat.getString(this@ProfileActivity, R.string.passwords_must)) }
+                            withContext(Dispatchers.Main) {
+                                include.btnSubmit.isEnabled = false
+                                include.checkingPasswords.visibility = View.INVISIBLE
+                                layoutIsEnabled(layout, true)
+                            }
+                        }
+                    }
+                } else hint(ContextCompat.getString(this, R.string.fill_first))
+            }
+            if(!layout.isVisible) {
+                move(true)
+                include.showAll.setOnClickListener { reveal() }
+                include.forgotPasswordChange.setOnClickListener { forgotPassword() }
+                include.btnSubmit.setOnClickListener { submit() }
+                include.btnCancel.setOnClickListener { move(false) }
+            } else move(false)
         }
-        @SuppressLint("SetTextI18n")
         fun genderDialog() {
             val dialogView = LayoutInflater.from(this).inflate(R.layout.pick_gender_layout, null)
             val dialog = AlertDialog.Builder(this).setView(dialogView).create()
             dialog.window?.setBackgroundDrawableResource(R.drawable.input_field)
             dialogView.findViewById<Button>(R.id.btnM).setOnClickListener {
-                ui.genderAccountField.setText("Male")
+                ui.genderAccountField.setText(ContextCompat.getString(this, R.string.male))
                 dialog.dismiss()
             }
             dialogView.findViewById<Button>(R.id.btnF).setOnClickListener {
-                ui.genderAccountField.setText("Female")
+                ui.genderAccountField.setText(ContextCompat.getString(this, R.string.female))
                 dialog.dismiss()
             }
             dialog.show()
@@ -243,12 +392,12 @@ class ProfileActivity : AppCompatActivity() {
         }
         lifecycleScope.launch(Dispatchers.Main) {
             if(inEdit) {
-                ui.doButton.isEnabled = false
+                ui.doButton.isClickable= false
                 ui.doButton.animate().apply {
                     duration = 500
                     rotation(-720f)
                 }.withEndAction {
-                    ui.doButton.isEnabled = true
+                    ui.doButton.isClickable = true
                     setEditable(inEdit)
                 }.start()
                 delay(250)
@@ -260,12 +409,12 @@ class ProfileActivity : AppCompatActivity() {
                         lifecycleScope.launch(Dispatchers.Main) {
                             change()
                             setEditable(inEdit)
-                            ui.doButton.isEnabled = false
+                            ui.doButton.isClickable= false
                             ui.doButton.animate().apply {
                                 duration = 500
                                 rotation(0f)
                             }.withEndAction {
-                                ui.doButton.isEnabled = true
+                                ui.doButton.isClickable = true
                             }.start()
                             delay(250)
                             ui.doButton.foreground = ContextCompat.getDrawable(this@ProfileActivity, R.drawable.baseline_edit_document_24)
@@ -275,12 +424,12 @@ class ProfileActivity : AppCompatActivity() {
                         lifecycleScope.launch(Dispatchers.Main) {
                             revert()
                             setEditable(inEdit)
-                            ui.doButton.isEnabled = false
+                            ui.doButton.isClickable= false
                             ui.doButton.animate().apply {
                                 duration = 500
                                 rotation(0f)
                             }.withEndAction {
-                                ui.doButton.isEnabled = true
+                                ui.doButton.isClickable = true
                             }.start()
                             delay(250)
                             ui.doButton.foreground = ContextCompat.getDrawable(this@ProfileActivity, R.drawable.baseline_edit_document_24)
@@ -304,11 +453,36 @@ class ProfileActivity : AppCompatActivity() {
     }
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.", ReplaceWith("super.onBackPressed()", "androidx.appcompat.app.AppCompatActivity"))
     override fun onBackPressed() {
-        if(inEdit) {
+        if(ui.changePasswordInclude.changePasswordLayout.isVisible) {
+            ui.changePasswordInclude.changePasswordLayout.animate().apply {
+                duration = 500
+                translationY(size.heightPixels.toFloat())
+            }.withEndAction {
+                if(ui.changePasswordInclude.currentPasswordChange.inputType == 1){
+                    SignupActivity.setShowPassword(ui.changePasswordInclude.showAll, ui.changePasswordInclude.currentPasswordChange)
+                    SignupActivity.setShowPassword(ui.changePasswordInclude.showAll, ui.changePasswordInclude.newPasswordChange)
+                    SignupActivity.setShowPassword(ui.changePasswordInclude.showAll, ui.changePasswordInclude.confirmNewPasswordChange)
+                }
+                ui.changePasswordInclude.currentPasswordChange.text = null
+                ui.changePasswordInclude.newPasswordChange.text = null
+                ui.changePasswordInclude.confirmNewPasswordChange.text = null
+                ui.changePasswordInclude.changePasswordLayout.visibility = View.INVISIBLE
+            }.start()
+        } else if(inEdit) {
             SignupActivity.showYesNoDialog(this, ContextCompat.getString(this, R.string.discard_changes),
                 onYes = { super.onBackPressed() },
                 onNo = {})
         } else super.onBackPressed()
     }
     private fun hint(message: String) { Pop.pop(this, message) }
+    companion object {
+        fun layoutIsEnabled(layout: ViewGroup, state: Boolean) {
+            for (i in 0 until layout.childCount) {
+                val child = layout.getChildAt(i)
+                child.isEnabled = state
+                if (child is ViewGroup) layoutIsEnabled(child, state)
+            }
+        }
+
+    }
 }

@@ -42,6 +42,7 @@ import com.h2so4.chatter.databinding.ActivityLoggedBinding
 import com.h2so4.chatter.models.Chatter
 import com.h2so4.chatter.models.Pop
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -253,17 +254,23 @@ class LoggedActivity : AppCompatActivity() {
         database.collection("Chatters").document(chatter?.username!!).update("FCMToken", token).await()
     }
     private fun chatterAccount() {
-        onBackPressed()
-        val profileIntent = Intent(this, ProfileActivity::class.java)
-        profileIntent.putExtra("visitor", chatter)
-        profileIntent.putExtra("account", chatter)
-        startActivity(profileIntent)
+        lifecycleScope.launch(Dispatchers.Main) {
+            val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
+            profileIntent.putExtra("visitor", chatter)
+            profileIntent.putExtra("account", chatter)
+            startActivity(profileIntent)
+            delay(1000)
+            onBackPressed()
+        }
     }
     private suspend fun logOut() {
         SignupActivity.showYesNoDialog(this, "Are you certain that you wish to log-out?",
             onYes = {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    withContext(Dispatchers.Main) { onBackPressed() }
+                    withContext(Dispatchers.Main) {
+                        load(true)
+                        onBackPressed()
+                    }
                     database.collection("Chatters").document(chatter?.username!!).update("FCMToken", FieldValue.delete()).await()
                     auth.signOut()
                     shared.edit().clear().apply()
@@ -405,7 +412,7 @@ class LoggedActivity : AppCompatActivity() {
             setChatterHeaderInfo()
             setChattersAdapter()
         }
-        storeData()
+//        storeData()
         chatter = Chatter(
             fullName = shared.getString("fullName", null),
             username = shared.getString("username", null),

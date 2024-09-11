@@ -129,7 +129,7 @@ class EnteringActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     auth.signOut()
                     loginDoorMove("dismiss")
-                    hint("Incorrect Password")
+                    hint(ContextCompat.getString(this, R.string.incorrect_password))
                     errorShake(ui.passwordField)
                     ui.progressBar.visibility = View.INVISIBLE
                 }
@@ -153,7 +153,7 @@ class EnteringActivity : AppCompatActivity() {
                         ui.forgotPassword.isEnabled = false
                         ui.progressBar.visibility = View.VISIBLE
                         auth.sendPasswordResetEmail(email!!).await()
-                        hint("Reset email had been sent to $email")
+                        hint("${ContextCompat.getString(this@EnteringActivity, R.string.reset_sent)}$email")
                         ui.progressBar.visibility = View.INVISIBLE
                         ui.forgotPassword.isEnabled = true
                     } catch (e: Exception) {

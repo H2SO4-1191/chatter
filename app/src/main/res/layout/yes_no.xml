@@ -28,6 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/no"
+            android:textColor="@color/black"
             android:fontFamily="@font/alike_angular"
             android:background="@drawable/spinner_background" />
 
@@ -37,6 +38,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:text="@string/yes"
+            android:textColor="@color/black"
             android:fontFamily="@font/alike_angular"
             android:background="@drawable/spinner_background" />
     </LinearLayout>

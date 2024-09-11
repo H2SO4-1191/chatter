@@ -8,6 +8,24 @@
     android:background="@drawable/background_4"
     tools:context=".activities.ProfileActivity">
 
+    <Button
+        android:id="@+id/doButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@null"
+        android:foreground="@drawable/baseline_edit_document_24"
+        android:foregroundTint="@color/seriousYellow"
+        app:layout_constraintBottom_toBottomOf="@+id/border"
+        app:layout_constraintEnd_toEndOf="@id/border"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="@+id/border"
+        app:layout_constraintTop_toTopOf="@id/border"
+        app:layout_constraintVertical_bias="0.0"
+        android:visibility="invisible"
+        tools:visibility="visible"/>
+
     <ImageView
         android:id="@+id/border"
         android:layout_width="wrap_content"
@@ -27,29 +45,10 @@
         android:layout_height="0dp"
         android:indeterminate="true"
         android:indeterminateTint="@color/seriousYellow"
-        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="@+id/border"
         app:layout_constraintEnd_toEndOf="@id/border"
         app:layout_constraintStart_toStartOf="@id/border"
         app:layout_constraintTop_toTopOf="@id/border" />
-
-    <Button
-        android:id="@+id/doButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:background="@null"
-        android:foreground="@drawable/baseline_edit_document_24"
-        android:foregroundTint="@color/seriousYellow"
-        app:layout_constraintBottom_toBottomOf="@+id/border"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="@+id/border"
-        app:layout_constraintTop_toTopOf="@id/border"
-        app:layout_constraintVertical_bias="0.0"
-        android:visibility="invisible"
-        tools:visibility="visible"/>
 
     <ScrollView
         android:id="@+id/accountInfoContainer"
@@ -323,4 +322,16 @@
                 android:orientation="horizontal" />
         </LinearLayout>
     </ScrollView>
+
+    <include
+        android:id="@+id/changePasswordInclude"
+        layout="@layout/change_password_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

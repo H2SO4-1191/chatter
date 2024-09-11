@@ -277,21 +277,13 @@ class SignupActivity : AppCompatActivity() {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
                 val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                ui.profilePicture.foreground = BitmapDrawable(resources, bitmap)
+                ui.profilePicture.setImageBitmap(bitmap)
                 ui.profilePicture.foregroundTintList = null
                 newChatter.profilePicture = encodeImage(bitmap)
                 ui.pen.setOnLongClickListener { false }
                 ui.pen.setOnClickListener { confirm() }
             }
         }
-    }
-    private fun encodeImage(bitmap: Bitmap): String {
-        val previewHeight = bitmap.height*150/bitmap.width
-        val previewBitmap = Bitmap.createScaledBitmap(bitmap, previewHeight, 150, false)
-        val byteArray = ByteArrayOutputStream()
-        previewBitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArray)
-        val bytes = byteArray.toByteArray()
-        return Base64.encodeToString(bytes, Base64.DEFAULT)
     }
     private fun setThings(target: TextView) {
         when(target) {
@@ -349,7 +341,7 @@ class SignupActivity : AppCompatActivity() {
         if(!manualCheckHelper(ui.emailField.text.toString(), "Email", PreRegex.email, true)) finalSay = false
         if(!manualCheckHelper(ui.phoneNumberField.text.toString(), "PhoneNumber", PreRegex.phoneNumber, true)) finalSay = false
         if(!manualCheckHelper(ui.passwordField.text.toString(), "Password", PreRegex.password, false)) finalSay = false
-        if(ui.confirmPasswordField.text.toString() != ui.passwordField.text.toString()) hint("Passwords do not match.", "Error")
+        if(ui.confirmPasswordField.text.toString() != ui.passwordField.text.toString()) hint(ContextCompat.getString(this, R.string.passwords_not_match), "Error")
         if(ui.birth.text.toString().isBlank()) hint("Birthdate is not provided.", "Error")
         if(newChatter.gender == null) hint("Gender is not provided.", "Error")
         return finalSay
@@ -428,6 +420,12 @@ class SignupActivity : AppCompatActivity() {
             }
     }
     companion object {
+        fun encodeImage(bitmap: Bitmap): String {
+            val byteArray = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArray)
+            val bytes = byteArray.toByteArray()
+            return Base64.encodeToString(bytes, Base64.DEFAULT)
+        }
         fun pickDate(view: TextView, context: Context) {
             val calendar = Calendar.getInstance()
             val dateDialog = DatePickerDialog(context, R.style.CustomDatePickerTheme, { _, selectedYear, selectedMonth, selectedDay ->

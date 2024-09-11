@@ -62,4 +62,16 @@
     <string name="edit_mode">Edit Mode.</string>
     <string name="save_changes">Do you wish to save changes?</string>
     <string name="discard_changes">Do you wish to discard changes?</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="current_password">Current Password:</string>
+    <string name="new_password">New Password:</string>
+    <string name="cancel">Cancel</string>
+    <string name="submit">Submit</string>
+    <string name="reset_sent">Reset email had been sent to </string>
+    <string name="fill_first">Fill in the fields first.</string>
+    <string name="passwords_not_match">Password and confirm password do not match.</string>
+    <string name="passwords_must">Password must be 6 chars or more.</string>
+    <string name="updated_password">Password had been updated.</string>
+    <string name="incorrect_password">Incorrect Password.</string>
 </resources>
