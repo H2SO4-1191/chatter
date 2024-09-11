@@ -4,23 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapShader
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Shader
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
@@ -91,7 +84,6 @@ class LoggedActivity : AppCompatActivity() {
                 chatter = intent.getParcelableExtra("chatter")
                 withContext(Dispatchers.Main) { hint("Hello, ${chatter?.fullName}.") }
             }
-            storeData()
             if(auth.currentUser?.isEmailVerified == true) {
                 withContext(Dispatchers.Main) {
                     pass()
@@ -106,18 +98,8 @@ class LoggedActivity : AppCompatActivity() {
         setChatterHeaderInfo()
         setAddChatters()
     }
-    private fun storeData() {
-        val editor = shared.edit()
-        editor.putString("fullName", chatter?.fullName)
-        editor.putString("username", chatter?.username)
-        editor.putString("email", chatter?.email)
-        editor.putString("phoneNumber", chatter?.phoneNumber)
-        editor.putString("birth", chatter?.birth)
-        editor.putString("gender", chatter?.gender)
-        editor.putString("profilePicture", chatter?.profilePicture)
-        editor.apply()
-    }
     private fun setChattersAdapter() {
+        ui.chatChattersInclude.chattersList.translationX = size.widthPixels.toFloat()*1.25f
         lifecycleScope.launch(Dispatchers.IO) {
             chatChatters = ArrayList()
             withContext(Dispatchers.Main) { load(true) }
@@ -146,6 +128,10 @@ class LoggedActivity : AppCompatActivity() {
                     ui.chatChattersInclude.chattersList.adapter = chattersAdapter
                     ui.chatChattersInclude.chattersList.layoutManager = LinearLayoutManager(this@LoggedActivity)
                     ui.chatChattersInclude.chattersList.setHasFixedSize(true)
+                    ui.chatChattersInclude.chattersList.animate().apply {
+                        duration = 600
+                        translationX(0f)
+                    }.start()
                     load(false)
                 }
             } else {
@@ -157,6 +143,7 @@ class LoggedActivity : AppCompatActivity() {
         }
     }
     private fun setAddChatters() {
+        ui.chatChattersInclude.searchChattersInclude.foundChatters.translationX = size.widthPixels.toFloat()*1.25f
         val add = ui.chatChattersInclude.searchChattersButton
         val layout = ui.chatChattersInclude.searchChattersInclude.searchChattersLayout
         val searchBar = ui.chatChattersInclude.searchChattersInclude.searchBar
@@ -195,18 +182,26 @@ class LoggedActivity : AppCompatActivity() {
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = foundChattersAdapter
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.layoutManager = LinearLayoutManager(this@LoggedActivity)
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.setHasFixedSize(true)
+                            ui.chatChattersInclude.searchChattersInclude.foundChatters.animate().apply {
+                                duration = 600
+                                translationX(0f)
+                            }.start()
                         }
-                    } else withContext(Dispatchers.Main) { ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.VISIBLE }
+                    } else withContext(Dispatchers.Main) {
+                        ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.VISIBLE
+                        ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+                    }
                 }
             } else {
                 search = null
                 foundChatters.clear()
                 ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
-                ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.INVISIBLE
             }
         }
         add.setOnClickListener {
             if(!toggled) {
+                ProfileActivity.layoutIsEnabled(ui.chatChattersInclude.chatChattersLayout,
+                    ui.chatChattersInclude.searchChattersInclude.searchChattersLayout, false)
                 toggled = true
                 add.isEnabled = false
                 layout.visibility = View.VISIBLE
@@ -219,6 +214,8 @@ class LoggedActivity : AppCompatActivity() {
                     translationX(0f)
                 }.withEndAction { add.isEnabled = true }
             } else {
+                ProfileActivity.layoutIsEnabled(ui.chatChattersInclude.chatChattersLayout,
+                    ui.chatChattersInclude.searchChattersInclude.searchChattersLayout, true)
                 toggled = false
                 add.isEnabled = false
                 add.animate().apply {
@@ -229,6 +226,9 @@ class LoggedActivity : AppCompatActivity() {
                     duration = 500
                     translationX(size.widthPixels.toFloat())
                 }.withEndAction {
+                    val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.hideSoftInputFromWindow(ui.chatChattersInclude.searchChattersInclude.searchBar.windowToken, 0)
+                    ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.INVISIBLE
                     ui.chatChattersInclude.searchChattersInclude.searchBar.text = null
                     ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
                     layout.visibility = View.VISIBLE
@@ -242,6 +242,13 @@ class LoggedActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 runnable?.let { handler.removeCallbacks(it) }
+                ui.chatChattersInclude.searchChattersInclude.foundChatters.animate().apply {
+                    duration = 600
+                    translationX(size.widthPixels.toFloat()*-1.25f)
+                }.withEndAction {
+                    ui.chatChattersInclude.searchChattersInclude.foundChatters.translationX = size.widthPixels.toFloat()*1.25f
+                    ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+                }.start()
             }
             override fun afterTextChanged(s: Editable?) {
                 runnable = Runnable { searchInput(searchBar.text.toString().trim().uppercase()) }
@@ -253,6 +260,17 @@ class LoggedActivity : AppCompatActivity() {
         val token = FirebaseMessaging.getInstance().token.await()
         database.collection("Chatters").document(chatter?.username!!).update("FCMToken", token).await()
     }
+    private fun chatChattersSite() {
+        if(ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.isVisible) closeAddChatters()
+        else if(ui.chatterAiInclude.chatterAiLayout.isVisible) {
+            ui.chatterAiInclude.chatterAiLayout.animate().apply {
+                duration = 600
+                translationY(size.heightPixels.toFloat()*-1)
+            }.withEndAction { ui.chatterAiInclude.chatterAiLayout.visibility = View.INVISIBLE }.start()
+        }
+        onBackPressed()
+        ProfileActivity.layoutIsEnabled(ui.drawerLayout, null, true)
+    }
     private fun chatterAccount() {
         lifecycleScope.launch(Dispatchers.Main) {
             val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
@@ -262,6 +280,15 @@ class LoggedActivity : AppCompatActivity() {
             delay(1000)
             onBackPressed()
         }
+    }
+    private fun chatterAI() {
+        onBackPressed()
+        ProfileActivity.layoutIsEnabled(ui.chatChattersInclude.chatChattersLayout, null, false)
+        ui.chatterAiInclude.chatterAiLayout.visibility = View.VISIBLE
+        ui.chatterAiInclude.chatterAiLayout.animate().apply {
+            duration = 600
+            translationY(0f)
+        }.start()
     }
     private suspend fun logOut() {
         SignupActivity.showYesNoDialog(this, "Are you certain that you wish to log-out?",
@@ -361,7 +388,9 @@ class LoggedActivity : AppCompatActivity() {
         navigationView.setNavigationItemSelectedListener { menuItem ->
             lifecycleScope.launch(Dispatchers.IO) {
                 when(menuItem.title) {
-                    "Chatter Account" -> chatterAccount()
+                    "Chatter Account" -> withContext(Dispatchers.Main) { chatterAccount() }
+                    "Chat Chatters" -> withContext(Dispatchers.Main) { chatChattersSite() }
+                    "Chatter AI" -> withContext(Dispatchers.Main) { chatterAI() }
                     "Log-Out" -> withContext(Dispatchers.Main) { logOut() }
                     else -> withContext(Dispatchers.Main) { hint(menuItem.title.toString()) }
                 }
@@ -375,25 +404,33 @@ class LoggedActivity : AppCompatActivity() {
     }
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")
     override fun onBackPressed() {
+        ProfileActivity.layoutIsEnabled(ui.drawerLayout, null, true)
         if(drawerLayout.isDrawerOpen(GravityCompat.START)) drawerLayout.closeDrawer(GravityCompat.START)
-        else if(ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.isVisible) {
-            toggled = false
-            ui.chatChattersInclude.searchChattersButton.isEnabled = false
-            ui.chatChattersInclude.searchChattersButton.animate().apply {
-                duration = 500
-                rotation(0f)
-            }.start()
-            ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.animate().apply {
-                duration = 500
-                translationX(size.widthPixels.toFloat())
-            }.withEndAction {
-                ui.chatChattersInclude.searchChattersInclude.searchBar.text = null
-                ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
-                ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.visibility = View.VISIBLE
-                ui.chatChattersInclude.searchChattersButton.isEnabled = true
-            }.start()
-        }
+        else if(ui.chatterAiInclude.chatterAiLayout.isVisible) {
+            ui.chatterAiInclude.chatterAiLayout.animate().apply {
+                duration = 600
+                translationY(size.heightPixels.toFloat()*-1)
+            }.withEndAction { ui.chatterAiInclude.chatterAiLayout.visibility = View.INVISIBLE }.start()
+        } else if(ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.isVisible) closeAddChatters()
         else super.onBackPressed()
+    }
+    private fun closeAddChatters() {
+        toggled = false
+        ui.chatChattersInclude.searchChattersButton.isEnabled = false
+        ui.chatChattersInclude.searchChattersButton.animate().apply {
+            duration = 500
+            rotation(0f)
+        }.start()
+        ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.animate().apply {
+            duration = 500
+            translationX(size.widthPixels.toFloat())
+        }.withEndAction {
+            ui.chatChattersInclude.searchChattersInclude.searchBar.text = null
+            ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = null
+            ui.chatChattersInclude.searchChattersInclude.searchChattersLayout.visibility = View.INVISIBLE
+            ui.chatChattersInclude.searchChattersInclude.chatterNotFound.visibility = View.INVISIBLE
+            ui.chatChattersInclude.searchChattersButton.isEnabled = true
+        }.start()
     }
     private fun hint(message: String) {
         Pop.pop(this, message)
@@ -403,16 +440,14 @@ class LoggedActivity : AppCompatActivity() {
         else ui.chatChattersInclude.loadingChatters.visibility = View.INVISIBLE
     }
     private fun manageOtherLayouts() {
+        ui.chatterAiInclude.chatterAiLayout.translationY = size.heightPixels.toFloat()*-1
         ui.verificationLayoutInclude.verificationLayout.translationY = size.heightPixels.toFloat()
         ui.chatChattersInclude.searchChattersInclude.searchChattersLayout .translationX = size.heightPixels.toFloat()
     }
     override fun onResume() {
         super.onResume()
-        if(auth.currentUser?.isEmailVerified == true) {
-            setChatterHeaderInfo()
-            setChattersAdapter()
-        }
-//        storeData()
+        ProfileActivity.layoutIsEnabled(ui.chatChattersInclude.chatChattersLayout,
+            ui.chatChattersInclude.searchChattersInclude.searchChattersLayout, true)
         chatter = Chatter(
             fullName = shared.getString("fullName", null),
             username = shared.getString("username", null),
@@ -423,5 +458,7 @@ class LoggedActivity : AppCompatActivity() {
             gender = shared.getString("gender", null),
             profilePicture = shared.getString("profilePicture", null)
         )
+        setChatterHeaderInfo()
+        setChattersAdapter()
     }
 }

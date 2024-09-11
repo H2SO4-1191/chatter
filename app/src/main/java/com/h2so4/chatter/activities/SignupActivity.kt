@@ -421,8 +421,13 @@ class SignupActivity : AppCompatActivity() {
     }
     companion object {
         fun encodeImage(bitmap: Bitmap): String {
+            val maxSize = 1024
+            val aspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+            val (width, height) = if (bitmap.width > bitmap.height)maxSize to (maxSize / aspectRatio).toInt()
+            else (maxSize * aspectRatio).toInt() to maxSize
+            val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
             val byteArray = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArray)
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArray)
             val bytes = byteArray.toByteArray()
             return Base64.encodeToString(bytes, Base64.DEFAULT)
         }

@@ -1,3 +1,4 @@
+<!-- TODO: 1- Chatter AI. 2- Actual messaging.  3-Other Gadgets. 4- Info change management & restrictions. 5- Strings.  -->
 <resources>
     <string name="app_name">Chatter</string>
     <string name="home">Home</string>
@@ -28,7 +29,7 @@
     <string name="first_amp_last_name"><![CDATA[First & Last Name:]]></string>
     <string name="forgot_your_password">Forgot your password?</string>
     <string name="verify">Verify</string>
-    <string name="if_you">If you didn\'t recieve an email click the verify button, click it again once you have verified your account to finish verification process.</string>
+    <string name="if_you">If you didn\'t receive an email click the verify button, click it again once you have verified your account to finish verification process.</string>
     <string name="_verifyEmail">Please check the inbox of your email</string>
     <string name="verifyEmail_">and verify your account to use Chatter, otherwise your account will be suspended.</string>
     <string name="chats">Chats</string>
@@ -74,4 +75,6 @@
     <string name="passwords_must">Password must be 6 chars or more.</string>
     <string name="updated_password">Password had been updated.</string>
     <string name="incorrect_password">Incorrect Password.</string>
+
 </resources>
+    <!-- TODO: 1- Chatter AI. 2- Actual messaging.  3-Other Gadgets. 4- Info change management & restrictions. 5- Strings.  -->

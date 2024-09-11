@@ -1,7 +1,9 @@
 package com.h2so4.chatter.activities
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -34,6 +36,7 @@ class EnteringActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseFirestore
     private lateinit var chatter: Chatter
+    private lateinit var shared: SharedPreferences
     private var signedUp: Boolean? = null
     private val size = DisplayMetrics()
     private var user: String? = null
@@ -45,6 +48,7 @@ class EnteringActivity : AppCompatActivity() {
         setContentView(ui.root)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.black)
         windowManager.defaultDisplay.getRealMetrics(size)
+        shared = getSharedPreferences("chatter", Context.MODE_PRIVATE)
         auth = FirebaseAuth.getInstance()
         database = FirebaseFirestore.getInstance()
         setListeners()
@@ -189,6 +193,7 @@ class EnteringActivity : AppCompatActivity() {
                 translationY(0f)
             }.withEndAction {
                 ui.loginDoor.visibility = View.INVISIBLE
+                storeData()
                 val loggedIntent = Intent(this, LoggedActivity::class.java)
                 loggedIntent.putExtra("logged", false)
                 loggedIntent.putExtra("chatter", chatter)
@@ -279,6 +284,17 @@ class EnteringActivity : AppCompatActivity() {
                 translationY(0f)
             }.withEndAction { ui.loginDoor.visibility = View.INVISIBLE }.start()
         }
+    }
+    private fun storeData() {
+        val editor = shared.edit()
+        editor.putString("fullName", chatter?.fullName)
+        editor.putString("username", chatter?.username)
+        editor.putString("email", chatter?.email)
+        editor.putString("phoneNumber", chatter?.phoneNumber)
+        editor.putString("birth", chatter?.birth)
+        editor.putString("gender", chatter?.gender)
+        editor.putString("profilePicture", chatter?.profilePicture)
+        editor.apply()
     }
     @Deprecated("This method has been deprecated in favor of using the Activity Result API\n      which brings increased type safety via an {@link ActivityResultContract} and the prebuilt\n      contracts for common intents available in\n      {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for\n      testing, and allow receiving results in separate, testable classes independent from your\n      activity. Use\n      {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}\n      with the appropriate {@link ActivityResultContract} and handling the result in the\n      {@link ActivityResultCallback#onActivityResult(Object) callback}.")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

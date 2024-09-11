@@ -21,6 +21,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -63,8 +64,8 @@ class ProfileActivity : AppCompatActivity() {
         visitor = intent.getParcelableExtra("visitor")
         account = intent.getParcelableExtra("account")
         ui.changePasswordInclude.changePasswordLayout.translationY = size.heightPixels.toFloat()
-        ui.accountInfoContainer.translationX = size.widthPixels.toFloat()
-        ui.doButton.translationX = size.widthPixels.toFloat()*-1
+        ui.accountInfoContainer.translationX = size.widthPixels.toFloat()*1.25f
+        ui.doButton.translationX = size.widthPixels.toFloat()*-1.25f
         ui.changePasswordInclude.changePasswordLayout.elevation = 10f
         setup()
         knockKnock()
@@ -84,11 +85,11 @@ class ProfileActivity : AppCompatActivity() {
                 ui.doButton.visibility = View.VISIBLE
                 ui.accountInfoContainer.visibility = View.VISIBLE
                 ui.doButton.animate().apply {
-                    duration = 500
+                    duration = 600
                     translationX(0f)
                 }.start()
                 ui.accountInfoContainer.animate().apply {
-                    duration = 500
+                    duration = 600
                     translationX(0f)
                 }.start()
                 if(!account?.profilePicture.isNullOrBlank()) { ui.profilePictureAccount.setImageBitmap(ChattersAdapter.decodeImage(account?.profilePicture)) }
@@ -197,9 +198,7 @@ class ProfileActivity : AppCompatActivity() {
                     "Gender" to ui.genderAccountField.text.toString(),
                     "ProfilePicture" to newPP
                 )
-                withContext(Dispatchers.Main) { hint("AAA") }
                 database.collection("Chatters").document(account?.username!!).update(changes).await()
-                withContext(Dispatchers.Main) { hint("ZZZ") }
                 val editor = shared.edit()
                 editor.putString("username", changes["Username"].toString())
                 editor.putString("fullName", changes["FullName"].toString())
@@ -241,12 +240,14 @@ class ProfileActivity : AppCompatActivity() {
             }
             fun move(state: Boolean) {
                 if(state) {
+                    layoutIsEnabled(ui.main, layout, false)
                     layout.visibility = View.VISIBLE
                     layout.animate().apply {
                         duration = 500
                         translationY(0f)
                     }.start()
                 } else {
+                    layoutIsEnabled(ui.main, layout, true)
                     layout.animate().apply {
                         duration = 500
                         translationY(size.heightPixels.toFloat())
@@ -286,7 +287,7 @@ class ProfileActivity : AppCompatActivity() {
                     var correct = true
                     include.btnSubmit.isEnabled = false
                     include.checkingPasswords.visibility = View.VISIBLE
-                    layoutIsEnabled(layout, false)
+                    layoutIsEnabled(layout, null, false)
                     lifecycleScope.launch(Dispatchers.IO) {
                         try { auth.signInWithEmailAndPassword(account?.email!!, include.currentPasswordChange.text.toString()).await() }
                         catch(e: Exception) {
@@ -295,7 +296,7 @@ class ProfileActivity : AppCompatActivity() {
                                 include.btnSubmit.isEnabled = false
                                 include.checkingPasswords.visibility = View.INVISIBLE
                                 hint(ContextCompat.getString(this@ProfileActivity, R.string.incorrect_password))
-                                layoutIsEnabled(layout, true)
+                                layoutIsEnabled(layout, null, true)
                             }
                         }
                         if(correct) {
@@ -304,7 +305,7 @@ class ProfileActivity : AppCompatActivity() {
                                     auth.currentUser?.updatePassword(include.newPasswordChange.text.toString())?.await()
                                     withContext(Dispatchers.Main) {
                                         move(false)
-                                        layoutIsEnabled(layout, true)
+                                        layoutIsEnabled(layout, null, true)
                                         hint(ContextCompat.getString(this@ProfileActivity, R.string.updated_password))
                                     }
                                 } else withContext(Dispatchers.Main) { hint(ContextCompat.getString(this@ProfileActivity, R.string.passwords_not_match)) }
@@ -312,7 +313,7 @@ class ProfileActivity : AppCompatActivity() {
                             withContext(Dispatchers.Main) {
                                 include.btnSubmit.isEnabled = false
                                 include.checkingPasswords.visibility = View.INVISIBLE
-                                layoutIsEnabled(layout, true)
+                                layoutIsEnabled(layout, null, true)
                             }
                         }
                     }
@@ -454,6 +455,7 @@ class ProfileActivity : AppCompatActivity() {
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.", ReplaceWith("super.onBackPressed()", "androidx.appcompat.app.AppCompatActivity"))
     override fun onBackPressed() {
         if(ui.changePasswordInclude.changePasswordLayout.isVisible) {
+            layoutIsEnabled(ui.main, null, true)
             ui.changePasswordInclude.changePasswordLayout.animate().apply {
                 duration = 500
                 translationY(size.heightPixels.toFloat())
@@ -476,13 +478,12 @@ class ProfileActivity : AppCompatActivity() {
     }
     private fun hint(message: String) { Pop.pop(this, message) }
     companion object {
-        fun layoutIsEnabled(layout: ViewGroup, state: Boolean) {
-            for (i in 0 until layout.childCount) {
-                val child = layout.getChildAt(i)
-                child.isEnabled = state
-                if (child is ViewGroup) layoutIsEnabled(child, state)
+        fun layoutIsEnabled(layout: ViewGroup, exception: View?, state: Boolean) {
+            for (i in layout.children) {
+                if(i == exception) continue
+                i.isEnabled = state
+                if (i is ViewGroup) layoutIsEnabled(i, exception,state)
             }
         }
-
     }
 }
