@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/senderChatterProfilePictureFrame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="#00000000"
+        app:cardCornerRadius="100dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintBottom_toBottomOf="@id/messageCellReceived"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/messageCellReceived"
+        app:layout_constraintVertical_bias="1">
+        <ImageView
+            android:id="@+id/senderChatterProfilePicture"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center_horizontal"
+            android:foregroundTint="#000000"
+            android:scaleType="fitXY"
+            tools:srcCompat="@drawable/baseline_account_circle_24" />
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/messageCellReceived"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="300dp"
+        android:fontFamily="sans-serif-medium"
+        tools:text="Hello, message goes here..."
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:background="@drawable/message_received_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintVertical_bias="0"
+        app:layout_constraintStart_toEndOf="@+id/senderChatterProfilePictureFrame"
+        app:layout_constraintTop_toTopOf="parent" />
+    <TextView
+        android:id="@+id/dateReceived"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        tools:text="07/01/2004 | 10:30"
+        android:textAlignment="center"
+        android:textColor="@color/seriousYellowAlpha"
+        android:textSize="8sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/messageCellReceived"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toStartOf="@id/messageCellReceived"
+        app:layout_constraintTop_toBottomOf="@id/messageCellReceived"
+        tools:ignore="SmallSp" />
+</androidx.constraintlayout.widget.ConstraintLayout>

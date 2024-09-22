@@ -3,9 +3,11 @@ package com.h2so4.chatter.activities
 import android.Manifest
 import android.app.Activity
 import android.app.DatePickerDialog
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Matrix
@@ -18,6 +20,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Base64
@@ -36,7 +39,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.h2so4.chatter.R
 import com.h2so4.chatter.adapters.ChattersAdapter
@@ -55,7 +60,7 @@ class SignupActivity : AppCompatActivity() {
 
     private lateinit var database: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
-    private val newChatter = Chatter(null, null, null, null, null, null, null, null)
+    private val newChatter = Chatter(null, null, null, null, null, null, null, null, null)
     private lateinit var ui: ActivitySignupBinding
     private val size = DisplayMetrics()
     private var steps = 1
@@ -75,7 +80,7 @@ class SignupActivity : AppCompatActivity() {
     }
 
     private fun pen() {
-        hint("The pen will be your guide, tap it when guidance is needed.", "Hint")
+        hint(ContextCompat.getString(this, R.string.pen_guide), "Hint")
         penHint(ui.fullNameField)
         ui.pen.rotation = 135f
         ui.pen.post(Runnable {
@@ -93,7 +98,7 @@ class SignupActivity : AppCompatActivity() {
                     rotation(-45f)
                 }.withEndAction {
                     ui.fullNameField.animate().apply {
-                        duration = 2000
+                        duration = 1000
                         ui.fullNameField.startAnimation(AnimationUtils.loadAnimation(this@SignupActivity, R.anim.fade_in))
                     }.withEndAction {
                         ui.fullNameField.visibility = View.VISIBLE
@@ -168,14 +173,14 @@ class SignupActivity : AppCompatActivity() {
                                         if(isAvailable(target.text.toString(), type, true)) {
                                             setThings(target)
                                             step(next, co)
-                                        } else hint("$type is already registered.", "Error")
+                                        } else hint("$type ${ContextCompat.getString(this@SignupActivity, R.string.already_registered)}", "Error")
                                     }
                                 }
                             } else {
                                 setThings(target)
                                 step(next, co)
                             }
-                        } else if(target.text.toString().isNotBlank() && !isAnimating && !next.isVisible) hint("Invalid format", "Error")
+                        } else if(target.text.toString().isNotBlank() && !isAnimating && !next.isVisible) hint(ContextCompat.getString(this@SignupActivity, R.string.invalid_format), "Error")
                     }
                 }
                 handler.postDelayed(runnable!!, 1500)
@@ -276,12 +281,16 @@ class SignupActivity : AppCompatActivity() {
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
-                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                ui.profilePicture.setImageBitmap(bitmap)
-                ui.profilePicture.foregroundTintList = null
-                newChatter.profilePicture = encodeImage(bitmap)
-                ui.pen.setOnLongClickListener { false }
-                ui.pen.setOnClickListener { confirm() }
+                val imageSize = getFileSize(imageUri, contentResolver)
+                if(imageSize <= 3*1024*1024) {
+                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                    ui.profilePicture.setImageBitmap(bitmap)
+                    ui.profilePicture.foregroundTintList = null
+                    ui.profilePicture.foreground = null
+                    newChatter.profilePicture = encodeImage(bitmap)
+                    ui.pen.setOnLongClickListener { false }
+                    ui.pen.setOnClickListener { confirm() }
+                } else hint("Avatar must be less than 3 MB, this is ${imageSize/(1024*1024)} MB.", "Error")
             }
         }
     }
@@ -304,7 +313,7 @@ class SignupActivity : AppCompatActivity() {
         newChatter.birth = ui.birth.text.toString()
     }
     private fun done() {
-        if(!ui.profilePicture.isVisible) hint("To skip profile picture hold the pen.", "Hint")
+        if(!ui.profilePicture.isVisible) hint(ContextCompat.getString(this, R.string.to_skip), "Hint")
         penHint(ui.profilePicture)
         ui.pen.setOnLongClickListener {
             confirm()
@@ -315,7 +324,7 @@ class SignupActivity : AppCompatActivity() {
         val message = if(ui.profilePicture.foreground == ContextCompat.getDrawable(this, R.drawable.baseline_account_circle_24)) "Are you certain of your information?\nNote: Profile picture is optional" else "Are you certain of your information?"
         showYesNoDialog(this, message,
             onYes = { signup() },
-            onNo = { hint("Double check your information please.", "Hint") }
+            onNo = { hint(ContextCompat.getString(this, R.string.double_check), "Hint") }
         )
     }
     private fun manualCheckHelper(input: String, type: String,regex: Regex, unique: Boolean): Boolean {
@@ -328,7 +337,7 @@ class SignupActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 if(!isAvailable(input, type, false)) {
                     pass = false
-                    hint("$type is already registered.", "Error")
+                    hint("$type ${ContextCompat.getString(this@SignupActivity, R.string.already_registered)}", "Error")
                 }
             }
         }
@@ -363,11 +372,14 @@ class SignupActivity : AppCompatActivity() {
             "PhoneNumber" to newChatter.phoneNumber,
             "Birth" to newChatter.birth,
             "Gender" to newChatter.gender,
-            "ProfilePicture" to newChatter.profilePicture
+            "ProfilePicture" to newChatter.profilePicture,
+            "Available" to FieldValue.serverTimestamp()
             )
         database.collection("Chatters").document(newChatter.username?.uppercase()!!)
             .set(newChatterInfo)
-            .addOnSuccessListener { wayBack(true) }
+            .addOnSuccessListener {
+                wayBack(true)
+            }
             .addOnFailureListener { e ->
                 hint("Failed to sign you up, check your internet connection.\n${e.message.toString()}", "Error")
                 ui.progressBar.visibility = View.INVISIBLE
@@ -465,6 +477,19 @@ class SignupActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             dialog.show()
+        }
+        fun getFileSize(uri: Uri, contentResolver: ContentResolver): Long {
+            var fileSize: Long = 0
+            try {
+                val cursor = contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+                    if (it.moveToFirst()) {
+                        fileSize = it.getLong(sizeIndex)
+                    }
+                }
+            } catch (_: Exception) {}
+            return fileSize
         }
     }
 }

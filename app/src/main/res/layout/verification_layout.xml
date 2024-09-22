@@ -5,6 +5,7 @@
     android:id="@+id/verificationLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:background="@drawable/chatter_home_background">
 
     <TextView
@@ -45,6 +46,41 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/askToVerify"
         app:layout_constraintVertical_bias="0.0" />
+
+
+    <Button
+        android:id="@+id/signOutVerification"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="8dp"
+        android:background="@null"
+        android:fontFamily="@font/alike_angular"
+        android:foreground="@drawable/baseline_logout_24"
+        android:padding="10dp"
+        android:textColor="@color/black"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/alike_angular"
+        android:textAlignment="center"
+        android:textColor="@color/seriousYellow"
+        android:visibility="invisible"
+        tools:visibility="visible"
+        tools:text="00:00"
+        app:layout_constraintBottom_toTopOf="@+id/verifyButton"
+        app:layout_constraintEnd_toEndOf="@+id/verifyButton"
+        app:layout_constraintStart_toStartOf="@+id/verifyButton"
+        app:layout_constraintTop_toBottomOf="@+id/askToVerify" />
 
     <ProgressBar
         android:id="@+id/verifying"

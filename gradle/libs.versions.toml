@@ -1,9 +1,15 @@
 [versions]
 agp = "8.5.1"
+converterScalars = "2.9.0"
 cpp = "2.5.1"
 desugar_jdk_libs = "2.1.0"
 firebaseAuth = "23.5.0"
 firebaseBom = "33.1.2"
+firebaseBomVersion = "32.1.0"
+firebaseDatabase = "XX.X.X"
+generativeai = "0.9.0"
+googleServices = "4.4.2"
+json = "20210307"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
 junit = "4.13.2"
@@ -11,26 +17,43 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 appcompat = "1.7.0"
 kotlinxCoroutinesPlayServices = "1.7.3"
+lifecycleViewmodelKtx = "2.8.6"
 material = "1.12.0"
 activity = "1.9.1"
 constraintlayout = "2.1.4"
 mongodbDriverKotlinCoroutine = "5.1.2"
 multidex = "2.0.1"
+okhttp = "4.11.0"
+retrofit = "2.9.0"
+runtime = "1.7.2"
 sdpAndroid = "1.0.6"
 sspAndroid = "1.0.6"
 googleGmsGoogleServices = "4.4.2"
 firebaseMessaging = "24.0.1"
 firebaseFirestore = "25.1.0"
 firebaseAuthKtx = "23.0.0"
+datastoreCoreAndroid = "1.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
+androidx-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "runtime" }
+converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterScalars" }
+converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterScalars" }
+converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "converterScalars" }
 cpp = { module = "com.hbb20:cpp", version.ref = "cpp" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-bom-v3210 = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
+firebase-database = { module = "com.google.firebase:firebase-database", version.ref = "firebaseDatabase" }
+firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx" }
+firebase-firestore-ktx = { module = "com.google.firebase:firebase-firestore-ktx" }
+generativeai = { module = "com.google.ai.client.generativeai:generativeai", version.ref = "generativeai" }
+google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
+json = { module = "org.json:json", version.ref = "json" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -40,11 +63,14 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 mongodb-driver-kotlin-coroutine = { module = "org.mongodb:mongodb-driver-kotlin-coroutine", version.ref = "mongodbDriverKotlinCoroutine" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 sdp-android = { module = "com.intuit.sdp:sdp-android", version.ref = "sdpAndroid" }
 ssp-android = { module = "com.intuit.ssp:ssp-android", version.ref = "sspAndroid" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
+androidx-datastore-core-android = { group = "androidx.datastore", name = "datastore-core-android", version.ref = "datastoreCoreAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

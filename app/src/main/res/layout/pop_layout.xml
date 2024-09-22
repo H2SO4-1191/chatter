@@ -5,7 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
     android:padding="15dp"
-    android:background="@drawable/input_field">
+    android:background="@drawable/input_field"
+    android:animateLayoutChanges="true">
 
     <TextView
         android:id="@+id/toast_text"

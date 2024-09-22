@@ -1,5 +1,6 @@
 package com.h2so4.chatter.activities
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -26,6 +27,7 @@ import com.h2so4.chatter.models.Chatter
 import com.h2so4.chatter.models.Pop
 import com.h2so4.chatter.models.PreRegex
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -146,6 +148,7 @@ class EnteringActivity : AppCompatActivity() {
             hint("Invalid password format.")
         }
     }
+    @SuppressLint("SetTextI18n")
     private suspend fun setForgotPassword() {
         ui.forgotPassword.setOnClickListener {
             if (email == null) {
@@ -154,12 +157,21 @@ class EnteringActivity : AppCompatActivity() {
             } else {
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        ui.forgotPassword.isEnabled = false
-                        ui.progressBar.visibility = View.VISIBLE
+                        withContext(Dispatchers.Main) {
+                            ui.forgotPassword.isEnabled = false
+                            ui.progressBar.visibility = View.VISIBLE
+                        }
                         auth.sendPasswordResetEmail(email!!).await()
-                        hint("${ContextCompat.getString(this@EnteringActivity, R.string.reset_sent)}$email")
-                        ui.progressBar.visibility = View.INVISIBLE
-                        ui.forgotPassword.isEnabled = true
+                        withContext(Dispatchers.Main) {
+                            hint("${ContextCompat.getString(this@EnteringActivity, R.string.reset_sent)}$email")
+                            ui.progressBar.visibility = View.INVISIBLE
+                            for(count in 59 downTo 0) {
+                                ui.forgotPassword.text = "00:$count"
+                                delay(1000)
+                            }
+                            ui.forgotPassword.text = ContextCompat.getString(this@EnteringActivity, R.string.forgot_your_password)
+                            ui.forgotPassword.isEnabled = true
+                        }
                     } catch (e: Exception) {
                         hint("Failed reset email.")
                         ui.progressBar.visibility = View.INVISIBLE
@@ -209,6 +221,7 @@ class EnteringActivity : AppCompatActivity() {
             email = search.documents.firstOrNull()?.getString("Email"),
             phoneNumber = search.documents.firstOrNull()?.getString("PhoneNumber"),
             password = null,
+            token = null,
             birth = search.documents.firstOrNull()?.getString("Birth"),
             gender = search.documents.firstOrNull()?.getString("Gender"),
             profilePicture = search.documents.firstOrNull()?.getString("ProfilePicture")

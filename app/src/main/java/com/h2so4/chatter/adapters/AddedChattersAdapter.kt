@@ -13,9 +13,10 @@ import com.h2so4.chatter.adapters.ChattersAdapter.Companion.decodeImage
 import com.h2so4.chatter.models.Chatter
 
 class AddedChattersAdapter(private val context: Context, private val chatters: ArrayList<Chatter>, private val click: (Chatter) -> Unit): RecyclerView.Adapter<AddedChattersAdapter.AddedChatterHolder>() {
-    inner class AddedChatterHolder(itemView: View, click: (Chatter) -> Unit) : RecyclerView.ViewHolder(itemView) {
+    inner class AddedChatterHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val picture: ImageView? = itemView.findViewById(R.id.profilePictureAddedChatter)
-        private val name: TextView? = itemView.findViewById(R.id.usernameAddedChatter)
+        private val username: TextView? = itemView.findViewById(R.id.usernameAddedChatter)
+        private val fullName: TextView? = itemView.findViewById(R.id.chatterLastMessage)
         fun bindChatter(context: Context, chatter: Chatter) {
             if(!chatter.profilePicture.isNullOrBlank()) picture?.setImageBitmap(decodeImage(chatter.profilePicture))
             else {
@@ -25,13 +26,14 @@ class AddedChattersAdapter(private val context: Context, private val chatters: A
                 }
                 picture?.setColorFilter(ContextCompat.getColor(context, R.color.seriousYellow))
             }
-            name?.text = chatter.username
+            username?.text = chatter.username
+            fullName?.text = chatter.fullName
             itemView.setOnClickListener { click(chatter) }
         }
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AddedChatterHolder {
         val view = LayoutInflater.from(context).inflate(R.layout.added_chatter_cell, parent, false)
-        return AddedChatterHolder(view, click)
+        return AddedChatterHolder(view)
     }
     override fun onBindViewHolder(holder: AddedChatterHolder, position: Int) {
         holder.bindChatter(context, chatters[position])

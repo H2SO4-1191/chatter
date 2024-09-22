@@ -1,3 +1,11 @@
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").inputStream().use { load(it) }
+}
+val firebaseDbUrl: String = localProperties.getProperty("FIREBASE_DB_URL") ?: ""
+val aiApiKey: String = localProperties.getProperty("AI_API_KEY") ?: ""
+val chatterServerUrl: String = localProperties.getProperty("CHATTER_SERVER_URL") ?: ""
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -14,6 +22,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "FIREBASE_DB_URL", "\"$firebaseDbUrl\"")
+        buildConfigField("String", "AI_API_KEY", "\"$aiApiKey\"")
+        buildConfigField("String", "CHATTER_SERVER_URL", "\"$chatterServerUrl\"")
         multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,11 +47,11 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -55,6 +66,19 @@ dependencies {
     implementation(libs.androidx.multidex)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.firebase.database)
+    implementation(platform(libs.firebase.bom.v3210))
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.androidx.datastore.core.android)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.converter.moshi)
+    implementation(libs.converter.scalars)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.json)
+    implementation(libs.androidx.runtime)
+    implementation(libs.generativeai)
+    implementation (libs.okhttp)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

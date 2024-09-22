@@ -1,4 +1,3 @@
-<!-- TODO: 1- Chatter AI. 2- Actual messaging.  3-Other Gadgets. 4- Info change management & restrictions. 5- Strings.  -->
 <resources>
     <string name="app_name">Chatter</string>
     <string name="home">Home</string>
@@ -58,7 +57,7 @@
     <string name="confirm_password_hint">Confirm password has to match the password.</string>
     <string name="birth_hint">Tap the Birth field and pick your birth from the calender, tap the year to scroll through years faster.\ne.g: 07/01/2004</string>
     <string name="gender_hint">Tap on one of the buttons to choose your gender, male or female.</string>
-    <string name="profile_picture_hint">Tap on the circle to add a profile picture, or hold the pen and skip it.</string>
+    <string name="profile_picture_hint">Tap on the circle to add an avatar, or hold the pen and skip it.</string>
     <string name="cannot_be_edited">This field cannot be edited.</string>
     <string name="edit_mode">Edit Mode.</string>
     <string name="save_changes">Do you wish to save changes?</string>
@@ -75,6 +74,14 @@
     <string name="passwords_must">Password must be 6 chars or more.</string>
     <string name="updated_password">Password had been updated.</string>
     <string name="incorrect_password">Incorrect Password.</string>
-
+    <string name="say_hello">Say Hello!</string>
+    <string name="ask">Ask Chatter AI</string>
+    <string name="online">Online</string>
+    <string name="last_seen">Last seen: </string>
+    <string name="logout_confirm">Are you certain that you wish to log-out?</string>
+    <string name="pen_guide">The pen will be your guide, tap it when guidance is needed.</string>
+    <string name="already_registered">is already registered.</string>
+    <string name="invalid_format">Invalid format</string>
+    <string name="to_skip">To skip avatar hold the pen.</string>
+    <string name="double_check">Double check your information please.</string>
 </resources>
-    <!-- TODO: 1- Chatter AI. 2- Actual messaging.  3-Other Gadgets. 4- Info change management & restrictions. 5- Strings.  -->

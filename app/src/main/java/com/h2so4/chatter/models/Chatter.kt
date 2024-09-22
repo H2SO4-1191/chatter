@@ -11,9 +11,13 @@ data class Chatter(
     var password: String?,
     var birth: String?,
     var gender: String?,
-    var profilePicture: String?
+    var profilePicture: String?,
+    var token: String?
 ): Parcelable {
+
+
     constructor(parcel: Parcel) : this(
+        parcel.readString(),
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -34,6 +38,7 @@ data class Chatter(
         parcel.writeString(birth)
         parcel.writeString(gender)
         parcel.writeString(profilePicture)
+        parcel.writeString(token)
     }
 
     override fun describeContents(): Int {

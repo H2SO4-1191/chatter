@@ -30,6 +30,7 @@ import com.google.firebase.firestore.AggregateField
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.h2so4.chatter.R
+import com.h2so4.chatter.activities.SignupActivity.Companion.getFileSize
 import com.h2so4.chatter.adapters.AddedChattersAdapter
 import com.h2so4.chatter.adapters.ChattersAdapter
 import com.h2so4.chatter.databinding.ActivityProfileBinding
@@ -42,7 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class ProfileActivity : AppCompatActivity() {
+class ProfileActivity : BaseActivity() {
 
     private lateinit var ui: ActivityProfileBinding
     private lateinit var database: FirebaseFirestore
@@ -138,7 +139,7 @@ class ProfileActivity : AppCompatActivity() {
                             username = contact.getString("Username"),
                             profilePicture = contact.getString("ProfilePicture"),
                             gender = contact.getString("Gender"),
-                            fullName = null, email = null, phoneNumber = null, password = null, birth = null
+                            fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
                         )
                     )
                 }
@@ -167,8 +168,6 @@ class ProfileActivity : AppCompatActivity() {
                 if(intent.getBooleanExtra("comeBack", false)) onBackPressed()
                 else {
                     lifecycleScope.launch(Dispatchers.IO) {
-                        database.collection("Chatters").document(visitor?.username!!)
-                            .collection("ChatChatters").document(account?.username!!).set(emptyMap<Any, Any>()).await()
                         withContext(Dispatchers.Main) {
                             val chatIntent = Intent(this@ProfileActivity, ChatActivity::class.java)
                             chatIntent.putExtra("sender", visitor)
@@ -192,25 +191,22 @@ class ProfileActivity : AppCompatActivity() {
                         .toBitmap(ui.profilePictureAccount.drawable.intrinsicWidth, ui.profilePictureAccount.drawable.intrinsicHeight))
                 else null
                 val changes = hashMapOf<String, Any?>(
-                    "Username" to ui.usernameAccountField.text.toString(),
                     "FullName" to ui.fullNameAccountField.text.toString(),
                     "Birth" to ui.birthAccountField.text.toString(),
                     "Gender" to ui.genderAccountField.text.toString(),
                     "ProfilePicture" to newPP
                 )
-                database.collection("Chatters").document(account?.username!!).update(changes).await()
                 val editor = shared.edit()
-                editor.putString("username", changes["Username"].toString())
                 editor.putString("fullName", changes["FullName"].toString())
                 editor.putString("birth", changes["Birth"].toString())
                 editor.putString("gender", changes["Gender"].toString())
                 editor.putString("profilePicture", newPP)
                 editor.apply()
+                database.collection("Chatters").document(account?.username!!).update(changes).await()
                 withContext(Dispatchers.Main) { ui.loadingAccount.visibility = View.INVISIBLE }
             }
         }
         fun revert() {
-            ui.usernameAccountField.setText(account?.username)
             ui.fullNameAccountField.setText(account?.fullName)
             ui.birthAccountField.setText(account?.birth)
             ui.genderAccountField.setText(account?.gender)
@@ -383,7 +379,7 @@ class ProfileActivity : AppCompatActivity() {
                 ui.addedChatters.visibility = View.VISIBLE
                 ui.profilePictureAccount.setOnClickListener {}
             }
-            setEditableInfo(ui.usernameAccountField, false, ui.usernameAccountText, ContextCompat.getString(this, R.string.username_hint), state)
+            setEditableInfo(ui.usernameAccountField, null, ui.usernameAccountText, ContextCompat.getString(this, R.string.cannot_be_edited), state)
             setEditableInfo(ui.fullNameAccountField, false, ui.fullNameAccountText, ContextCompat.getString(this, R.string.full_name_hint), state)
             setEditableInfo(ui.emailAccountField, null, ui.emailAccountText, ContextCompat.getString(this, R.string.cannot_be_edited), state)
             setEditableInfo(ui.phoneNumberAccountField, null, ui.phoneNumberAccountText, ContextCompat.getString(this, R.string.cannot_be_edited), state)
@@ -408,17 +404,19 @@ class ProfileActivity : AppCompatActivity() {
                     ContextCompat.getString(this@ProfileActivity, R.string.save_changes),
                     onYes = {
                         lifecycleScope.launch(Dispatchers.Main) {
-                            change()
-                            setEditable(inEdit)
-                            ui.doButton.isClickable= false
-                            ui.doButton.animate().apply {
-                                duration = 500
-                                rotation(0f)
-                            }.withEndAction {
-                                ui.doButton.isClickable = true
-                            }.start()
-                            delay(250)
-                            ui.doButton.foreground = ContextCompat.getDrawable(this@ProfileActivity, R.drawable.baseline_edit_document_24)
+                            if(ui.fullNameAccountField.text.toString().matches(PreRegex.fullName)) {
+                                change()
+                                setEditable(inEdit)
+                                ui.doButton.isClickable= false
+                                ui.doButton.animate().apply {
+                                    duration = 500
+                                    rotation(0f)
+                                }.withEndAction {
+                                    ui.doButton.isClickable = true
+                                }.start()
+                                delay(250)
+                                ui.doButton.foreground = ContextCompat.getDrawable(this@ProfileActivity, R.drawable.baseline_edit_document_24)
+                            } else hint(ContextCompat.getString(this@ProfileActivity, R.string.full_name_hint))
                         }
                     },
                     onNo = {
@@ -446,9 +444,12 @@ class ProfileActivity : AppCompatActivity() {
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
-                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                ui.profilePictureAccount.colorFilter = null
-                ui.profilePictureAccount.setImageBitmap(bitmap)
+                val imageSize = getFileSize(imageUri, contentResolver)
+                if(imageSize <= 3*1024*1024) {
+                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                    ui.profilePictureAccount.colorFilter = null
+                    ui.profilePictureAccount.setImageBitmap(bitmap)
+                } else hint("Avatar must be less than 3 MB, this is ${imageSize/(1024*1024)} MB.")
             }
         }
     }
