@@ -2,10 +2,14 @@ package com.h2so4.chatter.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.database.ChildEventListener
@@ -14,6 +18,8 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.h2so4.chatter.BuildConfig
 import com.h2so4.chatter.R
@@ -33,6 +39,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.Callback
+import org.json.JSONObject
 import java.io.IOException
 
 class ChatActivity: BaseActivity() {
@@ -46,6 +53,7 @@ class ChatActivity: BaseActivity() {
     private var chatReference: DatabaseReference? = null
     private var sender: Chatter? = null
     private var receiver: Chatter? = null
+    private var inChat: Int? = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +67,7 @@ class ChatActivity: BaseActivity() {
         database = FirebaseDatabase.getInstance(BuildConfig.FIREBASE_DB_URL)
         sender = intent.getParcelableExtra("sender")
         receiver = intent.getParcelableExtra("receiver")
+        ui.send.isClickable = false
         setInfo()
         setChatAdapter()
         ui.send.setOnClickListener { send() }
@@ -102,7 +111,11 @@ class ChatActivity: BaseActivity() {
             val get = if(check1.exists()) check1 else if(check2.exists()) check2 else null
             chatReference = get?.ref
             if (get != null) {
-                for (i in get.children) messages.add(i.getValue(Message::class.java)!!)
+                for (i in get.children)
+                    if(i.hasChildren()) {
+                        if(i.child("sender").getValue(String::class.java) == receiver?.username) chatReference?.child(i.key!!)?.child("state")?.setValue(1)
+                        messages.add(i.getValue(Message::class.java)!!)
+                    }
             } else withContext(Dispatchers.Main) { ui.sayHello.visibility = View.VISIBLE }
             withContext(Dispatchers.Main) {
                 adapter = ChatAdapter(sender!!, receiver!!, messages, this@ChatActivity)
@@ -117,6 +130,8 @@ class ChatActivity: BaseActivity() {
                     ui.loadingChat.visibility = View.INVISIBLE
                     setKeyboardListener()
                     setupChatListener()
+                    setInChatListener()
+                    ui.send.isClickable = true
                 }.start()
             }
         }
@@ -138,46 +153,90 @@ class ChatActivity: BaseActivity() {
         }
         lifecycleScope.launch(Dispatchers.IO) {
             if (ui.inputMessage.text.toString().isNotBlank()) {
-                val newMessage = Message(sender?.username!!, ui.inputMessage.text.toString(), ServerValue.TIMESTAMP)
-                if(chatReference != null) chatReference!!.push().setValue(newMessage)
-                else {
-                    withContext(Dispatchers.Main) { ui.send.isClickable = false }
+                val newMessage = Message(sender?.username!!, ui.inputMessage.text.toString(), inChat?:0,ServerValue.TIMESTAMP)
+                if(chatReference != null) {
+                    chatReference!!.push().setValue(newMessage)
+                    withContext(Dispatchers.Main) { fly() }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        ui.inputMessage.text = null
+                        ui.send.isClickable = false
+                        ui.send.animate().apply {
+                            duration = 600
+                            rotation(360f)
+                        }.start()
+                        delay(300)
+                        ui.creatingChat.visibility = View.VISIBLE
+                        ui.send.visibility = View.INVISIBLE
+                    }
                     firestore.collection("Chatters").document(sender?.username!!)
                         .collection("ChatChatters").document(receiver?.username!!).set(emptyMap<String, Any>()).await()
                     firestore.collection("Chatters").document(receiver?.username!!)
                         .collection("ChatChatters").document(sender?.username!!).set(emptyMap<String, Any>()).await()
                     database.getReference("Chats").child("${sender?.username}|${receiver?.username}")
                         .push().setValue(newMessage).await()
+                    database.getReference("Chats").child("${sender?.username}|${receiver?.username}")
+                        .child(sender?.username!!).setValue(1).await()
+                    database.getReference("Chats").child("${sender?.username}|${receiver?.username}")
+                        .child(receiver?.username!!).setValue(0).await()
                     chatReference = database.getReference("Chats").child("${sender?.username}|${receiver?.username}")
                     withContext(Dispatchers.Main) {
-                        ui.loadingChat.visibility = View.INVISIBLE
+                        ui.send.animate().apply {
+                            duration = 600
+                            rotation(720f)
+                        }.start()
+                        delay(250)
+                        ui.creatingChat.visibility = View.INVISIBLE
+                        ui.send.visibility = View.VISIBLE
                         ui.sayHello.visibility = View.INVISIBLE
                         ui.send.isClickable = true
                     }
                     setupChatListener()
+                    setInChatListener()
                 }
-                withContext(Dispatchers.Main) {
-                    if(ui.chatterInfo.chatterLastMessage.text.toString() != "Online")
-                        sendNotificationToServer(receiver?.token ?: "", sender?.username!!, newMessage.message)
-                    fly()
-                }
-
+                withContext(Dispatchers.Main) { if(inChat == 0) sendNotificationToServer(receiver?.token ?: "", sender?.username!!, newMessage.message) }
             }
+            firestore.collection("Chatters")
+                .document(sender?.username!!)
+                .collection("ChatChatters")
+                .document(receiver?.username!!)
+                .set(hashMapOf("Last" to FieldValue.serverTimestamp()))
+            firestore.collection("Chatters")
+                .document(receiver?.username!!)
+                .collection("ChatChatters")
+                .document(sender?.username!!)
+                .set(hashMapOf("Last" to FieldValue.serverTimestamp()))
         }
     }
     private fun setupChatListener() {
         chatReference?.addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                val newMessage = snapshot.getValue(Message::class.java)!!
-                if(!adapter.messages.contains(newMessage)) {
-                    adapter.addMessage(newMessage)
-                    ui.messagesList.scrollToPosition(adapter.itemCount - 1)
+                if(snapshot.hasChildren()) {
+                    val newMessage = snapshot.getValue(Message::class.java)!!
+                    var exists = false
+                    for(i in adapter.messages) if(i.toString() == newMessage.toString()) {
+                        exists = true
+                        break
+                    }
+                    if(!exists) {
+                        adapter.addMessage(newMessage)
+                        adapter.notifyItemInserted(adapter.itemCount - 1)
+                        ui.messagesList.scrollToPosition(adapter.itemCount - 1)
+                    }
                 }
             }
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onChildRemoved(snapshot: DataSnapshot) {}
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error:  DatabaseError) {}
+        })
+        ui.inputMessage.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if(ui.inputMessage.text.toString().isNotBlank()) chatReference?.child(sender?.username!!)?.setValue(2)
+                else chatReference?.child(sender?.username!!)?.setValue(1)
+            }
         })
     }
     private fun listenToAvailable() {
@@ -187,11 +246,30 @@ class ChatActivity: BaseActivity() {
                 try {
                     ui.chatterInfo.chatterLastMessage.text =
                         ContextCompat.getString(this, R.string.last_seen)
-                            .plus(ChatAdapter.setLocalTime(value.getTimestamp( "Available")?.toDate()?.time!!))
-                } catch(e: Exception) { ui.chatterInfo.chatterLastMessage. text = ContextCompat.getString(this, R.string.online) }
+                            .plus(" ").plus(ChatAdapter.setLocalTime(value.getTimestamp( "Available")?.toDate()?.time!!))
+                } catch(e: Exception) {
+                    if(value.getLong("Available") == 1L) ui.chatterInfo.chatterLastMessage. text = ContextCompat.getString(this, R.string.online)
+                }
                 receiver?.token = value.getString("FCMToken")
             }
         }
+    }
+    private fun setInChatListener() {
+        chatReference?.child(sender?.username!!)?.setValue(1)
+        chatReference?.child(receiver?.username!!)?.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) inChat = snapshot.getValue(Int::class.java)
+                if(inChat == 1) {
+                    for (i in 0..<adapter.messages.size) {
+                        adapter.messages[i].state = 1
+                        adapter.notifyItemChanged(i)
+                    }
+                }
+                if(inChat == 2) ui.chatterInfo.chatterLastMessage.text = ContextCompat.getString(this@ChatActivity, R.string.typing)
+                else if(inChat == 1) ui.chatterInfo.chatterLastMessage.text = ContextCompat.getString(this@ChatActivity, R.string.online)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
     private fun setKeyboardListener() {
         ui.inputMessage.setOnClickListener {
@@ -211,32 +289,37 @@ class ChatActivity: BaseActivity() {
     }
     private fun sendNotificationToServer(token: String, title: String, message: String) {
         val client = OkHttpClient()
-        val json = """
-        {
-            "token": "$token",
-            "title": "$title",
-            "message": "$message"
+        val json = JSONObject().apply {
+            put("token", token)
+            put("title", title)
+            put("message", message)
         }
-    """.trimIndent()
-        val body = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), json)
+        val body = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), json.toString())
         val request = Request.Builder()
             .url(BuildConfig.CHATTER_SERVER_URL)
             .post(body)
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: okhttp3.Call, e: IOException) {
-                lifecycleScope.launch(Dispatchers.Main) { Toast.makeText(this@ChatActivity, "+++FFF", Toast.LENGTH_SHORT).show() }
                 e.printStackTrace()
             }
             override fun onResponse(call: okhttp3.Call, response: Response) {
-                if (response.isSuccessful) {
-                    lifecycleScope.launch(Dispatchers.Main) { Toast.makeText(this@ChatActivity, "AAA", Toast.LENGTH_SHORT).show() }
-                    println("Notification sent successfully")
-                } else {
-                    lifecycleScope.launch(Dispatchers.Main) { Toast.makeText(this@ChatActivity, "FFF", Toast.LENGTH_SHORT).show() }
-                    println("Error sending notification: ${response.message}")
-                }
+                if (response.isSuccessful) println("Notification sent successfully")
+                else println("Error sending notification: ${response.message}")
             }
         })
+    }
+
+    override fun onPause() {
+        super.onPause()
+        chatReference?.child(sender?.username!!)?.setValue(0)
+    }
+    override fun onResume() {
+        super.onResume()
+        chatReference?.child(sender?.username!!)?.setValue(1)
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        chatReference?.child(sender?.username!!)?.setValue(0)
     }
 }

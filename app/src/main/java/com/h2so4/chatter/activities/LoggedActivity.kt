@@ -11,10 +11,12 @@ import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
@@ -45,6 +47,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.h2so4.chatter.BuildConfig
 
 class LoggedActivity : BaseActivity() {
@@ -63,6 +68,7 @@ class LoggedActivity : BaseActivity() {
     private lateinit var ai :GenerativeModel
     private var size = DisplayMetrics()
     private var chatter: Chatter? = null
+    private var chatChattersListener: ListenerRegistration? = null
     private var toggled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,7 +123,7 @@ class LoggedActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             chatChatters = ArrayList()
             withContext(Dispatchers.Main) { load(true) }
-            val search: QuerySnapshot? = try { database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").get().await() }
+            val search: QuerySnapshot? = try { database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").orderBy("Last", Query.Direction.DESCENDING).get().await() }
             catch(e: Exception) { null }
             if(search?.isEmpty == false) {
                 ui.chatChattersInclude.noChatters.visibility = View.INVISIBLE
@@ -133,7 +139,7 @@ class LoggedActivity : BaseActivity() {
                     )
                 }
                 withContext(Dispatchers.Main) {
-                    chattersAdapter = ChattersAdapter(this@LoggedActivity, chatChatters) { receiver ->
+                    chattersAdapter = ChattersAdapter(this@LoggedActivity, chatter!!, chatChatters, 1) { receiver ->
                         val chatIntent = Intent(this@LoggedActivity, ChatActivity::class.java)
                         chatIntent.putExtra("sender", chatter)
                         chatIntent.putExtra("receiver", receiver)
@@ -147,6 +153,7 @@ class LoggedActivity : BaseActivity() {
                         translationX(0f)
                     }.start()
                     load(false)
+                    listenToChatChatters()
                 }
             } else {
                 withContext(Dispatchers.Main) {
@@ -155,6 +162,80 @@ class LoggedActivity : BaseActivity() {
                 }
             }
         }
+    }
+    @SuppressLint("NotifyDataSetChanged", "SetTextI18n")
+    private fun listenToChatChatters() {
+        chatChattersListener = database.collection("Chatters")
+            .document(chatter?.username!!)
+            .collection("ChatChatters").addSnapshotListener { value, error ->
+                if (error != null) return@addSnapshotListener
+                if (value != null) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val currentChatters = ArrayList<String>()
+                        for(i in chattersAdapter.chatters) currentChatters.add(i.username!!)
+                        for(i in value.documentChanges) {
+                            when(i.type){
+                                DocumentChange.Type.ADDED -> {
+                                    if(!currentChatters.contains(i.document.id)) {
+                                        val newChatter = database.collection("Chatters").document(i.document.id).get().await()
+                                        var exists = false
+                                        for(j in  chattersAdapter.chatters) {
+                                            if(j.username == newChatter.getString("Username")) {
+                                                exists = true
+                                                break
+                                            }
+                                        }
+                                        if(!exists) {
+                                            chattersAdapter.chatters.add(0, Chatter(
+                                                username = newChatter.getString("Username"),
+                                                profilePicture = newChatter.getString("ProfilePicture"),
+                                                gender = newChatter.getString("Gender"),
+                                                fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
+                                            ))
+                                        }
+                                        chattersAdapter.notifyItemInserted(0)
+                                    }
+                                }
+                                DocumentChange.Type.MODIFIED -> {
+                                    if(currentChatters.contains(i.document.id)) {
+                                        var chatterToMove: Chatter? = null
+                                        for(j in chattersAdapter.chatters) {
+                                            if(j.username == i.document.id) {
+                                                chatterToMove = j
+                                                break
+                                            }
+                                        }
+                                        if(chatterToMove != null) {
+                                            withContext(Dispatchers.Main) {
+                                                val oldIndex = chattersAdapter.chatters.indexOf(chatterToMove)
+                                                chattersAdapter.chatters.removeAt(oldIndex)
+                                                chattersAdapter.chatters.add(0, chatterToMove)
+                                                chattersAdapter.notifyItemMoved(oldIndex, 0)
+                                                val cell = ui.chatChattersInclude.chattersList.findViewHolderForLayoutPosition(0)
+                                                val text = cell?.itemView?.findViewById<TextView>(R.id.chatterLastMessage)
+                                                when(text?.text.toString()) {
+                                                    "No new messages" -> {
+                                                        text?.setTextColor(ContextCompat.getColor(this@LoggedActivity, R.color.white))
+                                                        text?.text = "1 New message"
+                                                    }
+                                                    "1 new message" -> text?.text = "2 New messages"
+                                                    else -> {
+                                                        val string = text?.text.toString()
+                                                        Log.d("TEST", string)
+                                                        val num = string.subSequence(0, string.indexOf("N")).trim().toString().toInt() + 1
+                                                        text?.text = "$num New messages"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else -> {}
+                            }
+                        }
+                    }
+                }
+            }
     }
     private fun setAddChatters() {
         ui.chatChattersInclude.searchChattersInclude.foundChatters.translationX = size.widthPixels.toFloat()*1.25f
@@ -180,14 +261,15 @@ class LoggedActivity : BaseActivity() {
                                     username = i.getString("Username"),
                                     gender = i.getString("Gender"),
                                     profilePicture = i.getString("ProfilePicture"),
-                                    fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
+                                    fullName = i.getString("FullName"),
+                                    email = null, phoneNumber = null, password = null, birth = null, token = null
                                 )
                             )
                         }
                     }
                     if(foundChatters.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
-                            val foundChattersAdapter = ChattersAdapter(this@LoggedActivity, foundChatters) { account ->
+                            val foundChattersAdapter = ChattersAdapter(this@LoggedActivity, chatter!!, foundChatters, 0) { account ->
                                 val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
                                 profileIntent.putExtra("visitor", chatter)
                                 profileIntent.putExtra("account", account)
@@ -302,21 +384,6 @@ class LoggedActivity : BaseActivity() {
         val ask = ui.chatterAiInclude.sendPrompt
         val load = ui.chatterAiInclude.answering
         val qList = ui.chatterAiInclude.qList
-        fun fly() {
-            questionPrompt = prompt.text.toString()
-            prompt.text = null
-            ask.isClickable = false
-            ask.animate().apply {
-                duration = 250
-                translationX(size.widthPixels.toFloat() / 2f)
-            }.withEndAction {
-                ask.translationX = size.widthPixels.toFloat() * -1
-                ask.animate().apply {
-                    duration = 250
-                    translationX(0f)
-                }.withEndAction { load.visibility = View.VISIBLE }.start()
-            }.start()
-        }
         prompt.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
                 delay(100)
@@ -340,18 +407,52 @@ class LoggedActivity : BaseActivity() {
         }.start()
         ask.setOnClickListener {
             if(prompt.text.toString().isNotBlank()) {
-                fly()
-                aiAdapter.addMessage(Message(chatter?.username!!, questionPrompt, System.currentTimeMillis()))
-                qList.scrollToPosition(aiAdapter.itemCount - 1)
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val response = try { ai.generateContent(questionPrompt).text.toString() }
-                    catch(e: Exception) { "Something went wrong, please check your internet connection." }
-                    withContext(Dispatchers.Main) {
-                        val cleanedResponse = response.replace("*", "")
-                        load.visibility = View.INVISIBLE
-                        ask.isClickable = true
-                        aiAdapter.addMessage(Message("ChatterAI", cleanedResponse, System.currentTimeMillis()))
-                        qList.scrollToPosition(aiAdapter.itemCount - 1)
+                lifecycleScope.launch(Dispatchers.Main) {
+                    questionPrompt = prompt.text.toString()
+                    prompt.text = null
+                    ask.isClickable = false
+                    ask.animate().apply {
+                        duration = 600
+                        rotation(360f)
+                    }.withEndAction { ask.rotation = 0f }.start()
+                    delay(300)
+                    load.visibility = View.VISIBLE
+                    ask.visibility = View.INVISIBLE
+                    aiAdapter.addMessage(
+                        Message(
+                            chatter?.username!!,
+                            questionPrompt,
+                            0,
+                            System.currentTimeMillis()
+                        )
+                    )
+                    qList.scrollToPosition(aiAdapter.itemCount - 1)
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val response = try {
+                            ai.generateContent(questionPrompt).text.toString()
+                        } catch (e: Exception) {
+                            "Something went wrong, please check your internet connection."
+                        }
+                        withContext(Dispatchers.Main) {
+                            ask.animate().apply {
+                                duration = 600
+                                rotation(360f)
+                            }.withEndAction { ask.rotation = 0f }.start()
+                            delay(250)
+                            load.visibility = View.INVISIBLE
+                            ask.visibility = View.VISIBLE
+                            ask.isClickable = true
+                            val cleanedResponse = response.replace("*", "")
+                            aiAdapter.addMessage(
+                                Message(
+                                    "ChatterAI",
+                                    cleanedResponse,
+                                    0,
+                                    System.currentTimeMillis()
+                                )
+                            )
+                            qList.scrollToPosition(aiAdapter.itemCount - 1)
+                        }
                     }
                 }
             }
@@ -368,6 +469,9 @@ class LoggedActivity : BaseActivity() {
         ui.chatterAiInclude.qList.adapter = aiAdapter
         ui.chatterAiInclude.qList.setHasFixedSize(true)
         ui.chatterAiInclude.qList.layoutManager = LinearLayoutManager(this@LoggedActivity)
+    }
+    private fun about() {
+        startActivity(Intent(this, AboutActivity::class.java))
     }
     private fun logOut() {
         SignupActivity.showYesNoDialog(this, ContextCompat.getString(this, R.string.logout_confirm),
@@ -479,7 +583,8 @@ class LoggedActivity : BaseActivity() {
                     "Chat Chatters" -> withContext(Dispatchers.Main) { chatChattersSite() }
                     "Chatter AI" -> withContext(Dispatchers.Main) { chatterAI() }
                     "Log-Out" -> withContext(Dispatchers.Main) { logOut() }
-                    else -> withContext(Dispatchers.Main) { hint(menuItem.title.toString()) }
+                    "About" -> withContext(Dispatchers.Main) { about() }
+                    else -> withContext(Dispatchers.Main) { hint("Feature not implemented.") }
                 }
             }
             false
@@ -548,6 +653,14 @@ class LoggedActivity : BaseActivity() {
         )
         setChatterHeaderInfo()
         setChattersAdapter()
+    }
+    override fun onPause() {
+        super.onPause()
+        chatChattersListener?.remove()
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        database.collection("Chatters").document(chatter?.username!!).update("Available", FieldValue.serverTimestamp())
     }
     companion object {
         //This could have had multiple uses, just too lazy to refactor the code//

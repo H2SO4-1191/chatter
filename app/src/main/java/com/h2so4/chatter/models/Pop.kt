@@ -15,7 +15,7 @@ object Pop {
         val text = layout.findViewById<TextView>(R.id.toast_text)
         text.text = message
         val toast = Toast(context)
-        toast.duration = Toast.LENGTH_LONG
+        toast.duration = Toast.LENGTH_SHORT
         toast.view = layout
         toast.show()
     }

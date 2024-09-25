@@ -67,6 +67,21 @@
         app:layout_constraintHorizontal_bias="1"
         android:layout_marginEnd="8dp"/>
 
+    <ProgressBar
+        android:id="@+id/creatingChat"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/seriousYellow"
+        android:visibility="invisible"
+        tools:visibility="visible"
+        app:layout_constraintTop_toTopOf="@id/inputMessage"
+        app:layout_constraintBottom_toBottomOf="@id/inputMessage"
+        app:layout_constraintStart_toStartOf="@id/inputMessage"
+        app:layout_constraintEnd_toEndOf="@id/inputMessage"
+        app:layout_constraintHorizontal_bias="1"
+        android:layout_marginEnd="8dp"/>
+
     <include
         android:id="@+id/chatterInfo"
         android:layout_width="match_parent"
