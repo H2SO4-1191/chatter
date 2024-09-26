@@ -173,9 +173,11 @@ class EnteringActivity : AppCompatActivity() {
                             ui.forgotPassword.isEnabled = true
                         }
                     } catch (e: Exception) {
-                        hint("Failed reset email.")
-                        ui.progressBar.visibility = View.INVISIBLE
-                        ui.forgotPassword.isEnabled = true
+                        withContext(Dispatchers.Main) {
+                            hint("Failed reset email.")
+                            ui.progressBar.visibility = View.INVISIBLE
+                            ui.forgotPassword.isEnabled = true
+                        }
                     }
                 }
             }

@@ -514,13 +514,15 @@ class LoggedActivity : BaseActivity() {
             auth.currentUser?.sendEmailVerification()?.await()
             withContext(Dispatchers.Main) { hint("Verification email had been sent to ${chatter?.email}") }
             load(false)
-            ui.verificationLayoutInclude.countdown.visibility = View.VISIBLE
-            for (count in 59 downTo 0) {
-                @SuppressLint("SetTextI18n")
-                ui.verificationLayoutInclude.countdown.text = "00:$count"
-                delay(1000)
+            withContext(Dispatchers.Main) {
+                ui.verificationLayoutInclude.countdown.visibility = View.VISIBLE
+                for (count in 59 downTo 0) {
+                    @SuppressLint("SetTextI18n")
+                    ui.verificationLayoutInclude.countdown.text = "00:$count"
+                    delay(1000)
+                }
+                ui.verificationLayoutInclude.countdown.visibility = View.INVISIBLE
             }
-            ui.verificationLayoutInclude.countdown.visibility = View.INVISIBLE
         }
         withContext(Dispatchers.Main) {
             val verifyLayoutBinding = ui.verificationLayoutInclude
@@ -548,6 +550,7 @@ class LoggedActivity : BaseActivity() {
                         }
                     } else {
                         if(ui.verificationLayoutInclude.countdown.visibility == View.INVISIBLE) sendEmail()
+                        else withContext(Dispatchers.Main) { hint("Email had already been sent, verify or wait for the countdown to get one again.") }
                     }
                 }
             }

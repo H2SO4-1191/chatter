@@ -131,7 +131,7 @@ class SignupActivity : AppCompatActivity() {
         setShowPassword(ui.showConfirmPassword, ui.confirmPasswordField)
         infoChecker(ui.passwordField, PreRegex.password, ui.confirmPasswordField)
         ui.birth.setOnClickListener { pickDate(ui.birth, this) }
-        infoChecker(ui.confirmPasswordField, "".toRegex(), ui.birth)
+        infoChecker(ui.confirmPasswordField, ui.passwordField.text.toString().toRegex(), ui.birth)
         infoChecker(ui.birth, PreRegex.birth, ui.maleButton)
         ui.maleButton.setOnClickListener { gender(ui.maleButton) }
         ui.femaleButton.setOnClickListener { gender(ui.femaleButton) }
@@ -250,14 +250,12 @@ class SignupActivity : AppCompatActivity() {
         if(pressed.isChecked) {
             done()
             penHint(ui.profilePicture)
-            if(!ui.profilePicture.isVisible) {
-                ui.profilePicture.foreground = pp
-                ui.profilePicture.foregroundTintList = ui.pen.foregroundTintList
-            }
+            ui.profilePicture.foreground = pp
+            ui.profilePicture.foregroundTintList = ui.pen.foregroundTintList
         } else {
             penHint(ui.maleButton)
             newChatter.gender = null
-            if(!ui.profilePicture.isVisible) ui.profilePicture.foreground = ContextCompat.getDrawable(this, R.drawable.baseline_account_circle_24)
+            ui.profilePicture.foreground = ContextCompat.getDrawable(this, R.drawable.baseline_account_circle_24)
             ui.pen.setOnLongClickListener { false }
         }
         if(!ui.profilePicture.isVisible) {

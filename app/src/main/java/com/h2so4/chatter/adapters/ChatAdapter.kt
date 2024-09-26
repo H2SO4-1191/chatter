@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.drawable.BitmapDrawable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,28 +21,31 @@ import java.util.Date
 import java.util.Locale
 
 class ChatAdapter(private val sender: Chatter, private val receiver: Chatter, val messages: ArrayList<Message>, val context: Context): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    val maleDrawable = ContextCompat.getDrawable(context, R.drawable.male_user_icon)
+    val femaleDrawable = ContextCompat.getDrawable(context, R.drawable.female_user_icon)
+    private val yellow = ContextCompat.getColor(context, R.color.seriousYellow)
     private var senderPP =
         if(!sender.profilePicture.isNullOrBlank()) BitmapDrawable(context.resources, ChattersAdapter.decodeImage(sender.profilePicture))
         else {
             when(sender.gender){
-                "Male" -> ContextCompat.getDrawable(context, R.drawable.male_user_icon)!!
-                else -> ContextCompat.getDrawable(context, R.drawable.female_user_icon)!!
+                "Male" -> maleDrawable
+                else -> femaleDrawable
             }
-
         }
     private var receiverPP =
         if(!receiver.profilePicture.isNullOrBlank()) BitmapDrawable(context.resources, ChattersAdapter.decodeImage(receiver.profilePicture))
         else {
+            Log.d("TEST", "AAA")
             when(receiver.gender){
-                "Male" -> ContextCompat.getDrawable(context, R.drawable.male_user_icon)!!
-                else -> ContextCompat.getDrawable(context, R.drawable.female_user_icon)!!
+                "Male" -> maleDrawable
+                else -> femaleDrawable
             }
-
         }
-
     inner class SendViewHolder(private val binding: MessageSentCellBinding) : RecyclerView.ViewHolder(binding.root) {
         fun setData(message: Message) {
           binding.senderProfilePicture.setImageDrawable(senderPP)
+            if(senderPP == maleDrawable || senderPP == femaleDrawable) binding.senderProfilePicture.setColorFilter(yellow)
+            else binding.senderProfilePicture.colorFilter = null
           binding.messageCell.text = message.message
           binding.seen.visibility = if(message.state == 1) View.VISIBLE else View.INVISIBLE
           binding.date.text = setLocalTime(message.date as Long)
@@ -54,6 +58,11 @@ class ChatAdapter(private val sender: Chatter, private val receiver: Chatter, va
     inner class ReceiveViewHolder(private val binding: MessageReceivedCellBinding) : RecyclerView.ViewHolder(binding.root) {
         fun setData(message: Message) {
             binding.senderChatterProfilePicture.setImageDrawable(receiverPP)
+            if(receiverPP == maleDrawable || receiverPP == femaleDrawable) {
+                binding.senderChatterProfilePicture.setColorFilter(yellow)
+                Log.d("TEST", "ZZZ")
+            }
+            else binding.senderChatterProfilePicture.colorFilter = null
             binding.messageCellReceived.text = message.message
             binding.dateReceived.text = setLocalTime(message.date as Long)
             binding.messageCellReceived.setOnLongClickListener {
