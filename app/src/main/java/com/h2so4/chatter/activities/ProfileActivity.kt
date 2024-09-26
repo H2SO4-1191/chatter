@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -19,6 +20,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.children
@@ -146,10 +148,17 @@ class ProfileActivity : BaseActivity() {
                 withContext(Dispatchers.Main) {
                     ui.loadingAdded.visibility = View.GONE
                     val foundChattersAdapter = AddedChattersAdapter(this@ProfileActivity, addedChatters) { account ->
-                        val profileIntent = Intent(this@ProfileActivity, ProfileActivity::class.java)
-                        profileIntent.putExtra("visitor", visitor)
-                        profileIntent.putExtra("account", account)
-                        startActivity(profileIntent)
+                        if(ui.addedChatters.isEnabled) {
+                            ui.addedChatters.isEnabled = false
+                            val profileIntent = Intent(this@ProfileActivity, ProfileActivity::class.java)
+                            profileIntent.putExtra("visitor", visitor)
+                            profileIntent.putExtra("account", account)
+                            startActivity(profileIntent)
+                            lifecycleScope.launch {
+                                delay(1000)
+                                ui.addedChatters.isEnabled = true
+                            }
+                        }
                     }
                     ui.addedChatters.adapter = foundChattersAdapter
                     ui.addedChatters.layoutManager = LinearLayoutManager(this@ProfileActivity, LinearLayoutManager.HORIZONTAL, false)
@@ -167,12 +176,15 @@ class ProfileActivity : BaseActivity() {
             ui.doButton.setOnClickListener {
                 if(intent.getBooleanExtra("comeBack", false)) onBackPressed()
                 else {
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        withContext(Dispatchers.Main) {
-                            val chatIntent = Intent(this@ProfileActivity, ChatActivity::class.java)
-                            chatIntent.putExtra("sender", visitor)
-                            chatIntent.putExtra("receiver", account)
-                            startActivity(chatIntent)
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        ui.doButton.isClickable = false
+                        val chatIntent = Intent(this@ProfileActivity, ChatActivity::class.java)
+                        chatIntent.putExtra("sender", visitor)
+                        chatIntent.putExtra("receiver", account)
+                        startActivity(chatIntent)
+                        lifecycleScope.launch {
+                            delay(1000)
+                            ui.doButton.isClickable = true
                         }
                     }
                 }
@@ -370,9 +382,17 @@ class ProfileActivity : BaseActivity() {
                 ui.addedChattersText.visibility = View.GONE
                 ui.addedChatters.visibility = View.GONE
                 ui.profilePictureAccount.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_PICK)
-                    intent.type = "image/*"
-                    startActivityForResult(intent, 1)
+                    ui.profilePictureAccount.isClickable = false
+                    if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                        == PackageManager.PERMISSION_GRANTED) {
+                        val intent = Intent(Intent.ACTION_PICK)
+                        intent.type = "image/*"
+                        startActivityForResult(intent, 1)
+                    } else ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+                    lifecycleScope.launch {
+                        delay(1000)
+                        ui.profilePictureAccount.isClickable = true
+                    }
                 }
             } else {
                 ui.addedChattersText.visibility = View.VISIBLE
@@ -451,7 +471,7 @@ class ProfileActivity : BaseActivity() {
                     ui.profilePictureAccount.setImageBitmap(bitmap)
                 } else hint("Avatar must be less than 3 MB, this is ${imageSize/(1024*1024)} MB.")
             }
-        }
+        } else if(requestCode != 1) hint("Permission required to access images.")
     }
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.", ReplaceWith("super.onBackPressed()", "androidx.appcompat.app.AppCompatActivity"))
     override fun onBackPressed() {

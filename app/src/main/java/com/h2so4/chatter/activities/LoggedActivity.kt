@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,6 +22,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
@@ -80,6 +83,11 @@ class LoggedActivity : BaseActivity() {
         windowManager.defaultDisplay.getRealMetrics(size)
         database = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
         manageOtherLayouts()
         lifecycleScope.launch(Dispatchers.IO) { signedIn() }
     }
@@ -140,10 +148,17 @@ class LoggedActivity : BaseActivity() {
                 }
                 withContext(Dispatchers.Main) {
                     chattersAdapter = ChattersAdapter(this@LoggedActivity, chatter!!, chatChatters, 1) { receiver ->
-                        val chatIntent = Intent(this@LoggedActivity, ChatActivity::class.java)
-                        chatIntent.putExtra("sender", chatter)
-                        chatIntent.putExtra("receiver", receiver)
-                        startActivity(chatIntent)
+                        if(ui.chatChattersInclude.chattersList.isEnabled) {
+                            ui.chatChattersInclude.chattersList.isEnabled = false
+                            val chatIntent = Intent(this@LoggedActivity, ChatActivity::class.java)
+                            chatIntent.putExtra("sender", chatter)
+                            chatIntent.putExtra("receiver", receiver)
+                            startActivity(chatIntent)
+                            lifecycleScope.launch {
+                                delay(1000)
+                                ui.chatChattersInclude.chattersList.isEnabled = true
+                            }
+                        }
                     }
                     ui.chatChattersInclude.chattersList.adapter = chattersAdapter
                     ui.chatChattersInclude.chattersList.layoutManager = LinearLayoutManager(this@LoggedActivity)
@@ -270,10 +285,17 @@ class LoggedActivity : BaseActivity() {
                     if(foundChatters.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
                             val foundChattersAdapter = ChattersAdapter(this@LoggedActivity, chatter!!, foundChatters, 0) { account ->
-                                val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
-                                profileIntent.putExtra("visitor", chatter)
-                                profileIntent.putExtra("account", account)
-                                startActivity(profileIntent)
+                                if(ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled) {
+                                    ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled = false
+                                    val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
+                                    profileIntent.putExtra("visitor", chatter)
+                                    profileIntent.putExtra("account", account)
+                                    startActivity(profileIntent)
+                                    lifecycleScope.launch {
+                                        delay(1000)
+                                        ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled = true
+                                    }
+                                }
                             }
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.adapter = foundChattersAdapter
                             ui.chatChattersInclude.searchChattersInclude.foundChatters.layoutManager = LinearLayoutManager(this@LoggedActivity)
@@ -581,6 +603,7 @@ class LoggedActivity : BaseActivity() {
         navigationView.bringToFront()
         navigationView.setNavigationItemSelectedListener { menuItem ->
             lifecycleScope.launch(Dispatchers.IO) {
+                withContext(Dispatchers.Main) { menuItem.isEnabled = false }
                 when(menuItem.title) {
                     "Chatter Account" -> withContext(Dispatchers.Main) { chatterAccount() }
                     "Chat Chatters" -> withContext(Dispatchers.Main) { chatChattersSite() }
@@ -589,6 +612,8 @@ class LoggedActivity : BaseActivity() {
                     "About" -> withContext(Dispatchers.Main) { about() }
                     else -> withContext(Dispatchers.Main) { hint("Feature not implemented.") }
                 }
+                delay(1000)
+                withContext(Dispatchers.Main) { menuItem.isEnabled = true }
             }
             false
         }

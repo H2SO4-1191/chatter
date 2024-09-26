@@ -6,6 +6,7 @@ import android.app.DatePickerDialog
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
@@ -135,7 +136,14 @@ class SignupActivity : AppCompatActivity() {
         infoChecker(ui.birth, PreRegex.birth, ui.maleButton)
         ui.maleButton.setOnClickListener { gender(ui.maleButton) }
         ui.femaleButton.setOnClickListener { gender(ui.femaleButton) }
-        ui.profilePicture.setOnClickListener { setPP() }
+        ui.profilePicture.setOnClickListener {
+            ui.profilePicture.isClickable = false
+            setPP()
+            lifecycleScope.launch {
+                delay(1000)
+                ui.profilePicture.isClickable = true
+            }
+        }
     }
     private fun infoChecker(target: TextView, regex: Regex, next: View) {
         val co: View? = when(target) {
@@ -269,9 +277,12 @@ class SignupActivity : AppCompatActivity() {
         }
     }
     private fun setPP() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "image/*"
-        startActivityForResult(intent, 1)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+            == PackageManager.PERMISSION_GRANTED) {
+            val intent = Intent(Intent.ACTION_PICK)
+            intent.type = "image/*"
+            startActivityForResult(intent, 1)
+        } else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
     }
     @Deprecated("This method has been deprecated in favor of using the Activity Result API\n      which brings increased type safety via an {@link ActivityResultContract} and the prebuilt\n      contracts for common intents available in\n      {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for\n      testing, and allow receiving results in separate, testable classes independent from your\n      activity. Use\n      {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}\n      with the appropriate {@link ActivityResultContract} and handling the result in the\n      {@link ActivityResultCallback#onActivityResult(Object) callback}.")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -290,7 +301,7 @@ class SignupActivity : AppCompatActivity() {
                     ui.pen.setOnClickListener { confirm() }
                 } else hint("Avatar must be less than 3 MB, this is ${imageSize/(1024*1024)} MB.", "Error")
             }
-        }
+        } else if(requestCode != 1) hint("Permission required to access images.", "Error")
     }
     private fun setThings(target: TextView) {
         when(target) {

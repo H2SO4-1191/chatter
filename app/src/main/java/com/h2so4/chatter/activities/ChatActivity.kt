@@ -91,11 +91,16 @@ class ChatActivity: BaseActivity() {
             )
         }
         ui.profile.setOnClickListener {
+            ui.profile.isClickable = false
             val profileIntent = Intent(this, ProfileActivity::class.java)
             profileIntent.putExtra("visitor", sender)
             profileIntent.putExtra("account", receiver)
             profileIntent.putExtra("comeBack", true)
             startActivity(profileIntent)
+            lifecycleScope.launch {
+                delay(1000)
+                ui.profile.isClickable = true
+            }
         }
     }
     private fun setChatAdapter() {
