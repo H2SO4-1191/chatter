@@ -43,7 +43,7 @@
                 android:layout_marginTop="16dp"
                 android:fontFamily="@font/aguafina_script"
                 android:text="@string/about"
-                android:textAlignment="textStart"
+                android:textAlignment="center"
                 android:textColor="@color/seriousYellow"
                 android:textSize="30sp"
                 android:background="@drawable/input_field"

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
@@ -54,6 +55,7 @@ import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.h2so4.chatter.BuildConfig
+import com.h2so4.chatter.models.PreRegex
 
 class LoggedActivity : BaseActivity() {
 
@@ -102,12 +104,14 @@ class LoggedActivity : BaseActivity() {
                     phoneNumber = shared.getString("phoneNumber", null),
                     birth = shared.getString("birth", null),
                     gender = shared.getString("gender", null),
-                    profilePicture = shared.getString("profilePicture", null),
+                    profilePicture = null,
                     password = null,
                     token = null
                 )
+                PreRegex.me = shared.getString("profilePicture", "")?:""
             } else {
                 chatter = intent.getParcelableExtra("chatter")
+                chatter?.profilePicture = PreRegex.me
                 withContext(Dispatchers.Main) { hint("Hello, ${chatter?.fullName}.") }
             }
             if(auth.currentUser?.isEmailVerified == true) {
@@ -134,7 +138,7 @@ class LoggedActivity : BaseActivity() {
             val search: QuerySnapshot? = try { database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").orderBy("Last", Query.Direction.DESCENDING).get().await() }
             catch(e: Exception) { null }
             if(search?.isEmpty == false) {
-                ui.chatChattersInclude.noChatters.visibility = View.INVISIBLE
+                withContext(Dispatchers.Main) { ui.chatChattersInclude.noChatters.visibility = View.INVISIBLE }
                 for (i in search) {
                     val contact = database.collection("Chatters").document(i.id).get().await()
                     chatChatters.add(
@@ -151,9 +155,15 @@ class LoggedActivity : BaseActivity() {
                         if(ui.chatChattersInclude.chattersList.isEnabled) {
                             ui.chatChattersInclude.chattersList.isEnabled = false
                             val chatIntent = Intent(this@LoggedActivity, ChatActivity::class.java)
+                            PreRegex.me = chatter?.profilePicture?:""
+                            PreRegex.them = receiver.profilePicture?:""
+                            chatter?.profilePicture = null
+                            receiver.profilePicture = null
                             chatIntent.putExtra("sender", chatter)
                             chatIntent.putExtra("receiver", receiver)
                             startActivity(chatIntent)
+                            chatter?.profilePicture = PreRegex.me
+                            receiver.profilePicture = PreRegex.them
                             lifecycleScope.launch {
                                 delay(1000)
                                 ui.chatChattersInclude.chattersList.isEnabled = true
@@ -229,6 +239,10 @@ class LoggedActivity : BaseActivity() {
                                                 val cell = ui.chatChattersInclude.chattersList.findViewHolderForLayoutPosition(0)
                                                 val text = cell?.itemView?.findViewById<TextView>(R.id.chatterLastMessage)
                                                 when(text?.text.toString()) {
+                                                    "" -> {
+                                                        text?.setTextColor(ContextCompat.getColor(this@LoggedActivity, R.color.white))
+                                                        text?.text = "1 New message"
+                                                    }
                                                     "No new messages" -> {
                                                         text?.setTextColor(ContextCompat.getColor(this@LoggedActivity, R.color.white))
                                                         text?.text = "1 New message"
@@ -289,8 +303,11 @@ class LoggedActivity : BaseActivity() {
                                     ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled = false
                                     val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
                                     profileIntent.putExtra("visitor", chatter)
+                                    PreRegex.them = account.profilePicture?:""
+                                    account.profilePicture = null
                                     profileIntent.putExtra("account", account)
                                     startActivity(profileIntent)
+                                    account.profilePicture = PreRegex.them
                                     lifecycleScope.launch {
                                         delay(1000)
                                         ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled = true
@@ -393,9 +410,12 @@ class LoggedActivity : BaseActivity() {
     private fun chatterAccount() {
         lifecycleScope.launch(Dispatchers.Main) {
             val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
+            PreRegex.them = chatter?.profilePicture?:""
+            chatter?.profilePicture = null
             profileIntent.putExtra("visitor", chatter)
             profileIntent.putExtra("account", chatter)
             startActivity(profileIntent)
+            chatter?.profilePicture = PreRegex.them
             delay(1000)
             onBackPressed()
         }
@@ -679,6 +699,7 @@ class LoggedActivity : BaseActivity() {
             password = null,
             token = null
         )
+        PreRegex.me = shared.getString("profilePicture", "")?:""
         setChatterHeaderInfo()
         setChattersAdapter()
     }

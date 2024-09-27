@@ -24,7 +24,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.45999998"
+        app:layout_constraintVertical_bias="0.25"
         tools:text="Please check your email inbox and verify your account to use Chatter." />
 
     <Button
@@ -52,7 +52,6 @@
         android:id="@+id/signOutVerification"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:layout_marginTop="8dp"
         android:background="@null"
         android:fontFamily="@font/alike_angular"
         android:foreground="@drawable/baseline_logout_24"

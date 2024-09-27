@@ -67,7 +67,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
             <androidx.cardview.widget.CardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -76,14 +75,12 @@
                 android:layout_marginBottom="32dp"
                 app:cardBackgroundColor="#00000000"
                 app:cardCornerRadius="20dp">
-
                 <ImageView
                     android:id="@+id/profilePictureAccount"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
                     android:foregroundTint="#000000"
-                    android:scaleType="fitXY"
-
+                    android:scaleType="centerCrop"
                     tools:srcCompat="@drawable/baseline_account_circle_24" />
             </androidx.cardview.widget.CardView>
 

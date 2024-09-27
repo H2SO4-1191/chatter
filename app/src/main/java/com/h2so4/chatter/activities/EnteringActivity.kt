@@ -210,6 +210,8 @@ class EnteringActivity : AppCompatActivity() {
                 storeData()
                 val loggedIntent = Intent(this, LoggedActivity::class.java)
                 loggedIntent.putExtra("logged", false)
+                PreRegex.me = chatter.profilePicture?:""
+                chatter.profilePicture = null
                 loggedIntent.putExtra("chatter", chatter)
                 startActivity(loggedIntent)
                 finish()

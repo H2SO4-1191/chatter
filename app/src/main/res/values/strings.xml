@@ -50,7 +50,7 @@
     <string name="gender">Gender:</string>
     <string name="chats_with">Chats with:</string>
     <string name="full_name_hint">Full name has to be in the form of \"Firstname Lastname\".\ne.g: Mustafa Muhammad.</string>
-    <string name="username_hint">Username has to be unique, over 3 characters and have no spaces.\ne.g: H2SO4–1191.</string>
+    <string name="username_hint">Username has to be unique, must not include (\'.\', \'#\', \'$\', \'[\', \']\', \'|\') over 3 characters and have no spaces.\ne.g: H2SO4–1191.</string>
     <string name="email_hint">Email has to be unique and in the form of an actual email address.\ne.g: example@example.example.</string>
     <string name="phone_hint">Phone number has to be unique, without spaces and in the form of an actual phone number with \'+\' and country code so do not write the trunk prefix (the first \'0\').\n-Tap the map for country codes.\ne.g: +964??????????.</string>
     <string name="password_hint">Password has to of be 6 characters or more.\ne.g: 1q2w3e.</string>

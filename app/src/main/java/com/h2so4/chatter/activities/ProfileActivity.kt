@@ -1,5 +1,6 @@
 package com.h2so4.chatter.activities
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -8,6 +9,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.DisplayMetrics
@@ -17,9 +19,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -28,11 +28,9 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.AggregateField
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.h2so4.chatter.R
-import com.h2so4.chatter.activities.SignupActivity.Companion.getFileSize
 import com.h2so4.chatter.adapters.AddedChattersAdapter
 import com.h2so4.chatter.adapters.ChattersAdapter
 import com.h2so4.chatter.databinding.ActivityProfileBinding
@@ -65,7 +63,9 @@ class ProfileActivity : BaseActivity() {
         database = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
         visitor = intent.getParcelableExtra("visitor")
+        visitor?.profilePicture = PreRegex.me
         account = intent.getParcelableExtra("account")
+        account?.profilePicture = PreRegex.them
         ui.changePasswordInclude.changePasswordLayout.translationY = size.heightPixels.toFloat()
         ui.accountInfoContainer.translationX = size.widthPixels.toFloat()*1.25f
         ui.doButton.translationX = size.widthPixels.toFloat()*-1.25f
@@ -134,16 +134,18 @@ class ProfileActivity : BaseActivity() {
                     ui.addedChattersText.text = "Doesn't chat with anyone yet."
                 }
             } else {
-                for (i in getThem!!) {
-                    val contact = database.collection("Chatters").document(i.id).get().await()
-                    addedChatters.add(
-                        Chatter(
-                            username = contact.getString("Username"),
-                            profilePicture = contact.getString("ProfilePicture"),
-                            gender = contact.getString("Gender"),
-                            fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
+                if(getThem != null) {
+                    for (i in getThem!!) {
+                        val contact = database.collection("Chatters").document(i.id).get().await()
+                        addedChatters.add(
+                            Chatter(
+                                username = contact.getString("Username"),
+                                profilePicture = contact.getString("ProfilePicture"),
+                                gender = contact.getString("Gender"),
+                                fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
+                            )
                         )
-                    )
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     ui.loadingAdded.visibility = View.GONE
@@ -152,8 +154,11 @@ class ProfileActivity : BaseActivity() {
                             ui.addedChatters.isEnabled = false
                             val profileIntent = Intent(this@ProfileActivity, ProfileActivity::class.java)
                             profileIntent.putExtra("visitor", visitor)
+                            PreRegex.them = account.profilePicture?:""
+                            account.profilePicture = null
                             profileIntent.putExtra("account", account)
                             startActivity(profileIntent)
+                            account.profilePicture = PreRegex.them
                             lifecycleScope.launch {
                                 delay(1000)
                                 ui.addedChatters.isEnabled = true
@@ -179,9 +184,15 @@ class ProfileActivity : BaseActivity() {
                     lifecycleScope.launch(Dispatchers.Main) {
                         ui.doButton.isClickable = false
                         val chatIntent = Intent(this@ProfileActivity, ChatActivity::class.java)
+                        PreRegex.me = visitor?.profilePicture?:""
+                        PreRegex.them = account?.profilePicture?:""
+                        visitor?.profilePicture = null
+                        account?.profilePicture = null
                         chatIntent.putExtra("sender", visitor)
                         chatIntent.putExtra("receiver", account)
                         startActivity(chatIntent)
+                        visitor?.profilePicture = PreRegex.me
+                        account?.profilePicture = PreRegex.them
                         lifecycleScope.launch {
                             delay(1000)
                             ui.doButton.isClickable = true
@@ -382,13 +393,19 @@ class ProfileActivity : BaseActivity() {
                 ui.addedChattersText.visibility = View.GONE
                 ui.addedChatters.visibility = View.GONE
                 ui.profilePictureAccount.setOnClickListener {
-                    ui.profilePictureAccount.isClickable = false
-                    if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE)
-                        == PackageManager.PERMISSION_GRANTED) {
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         val intent = Intent(Intent.ACTION_PICK)
                         intent.type = "image/*"
                         startActivityForResult(intent, 1)
-                    } else ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+                    } else {
+                        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                            == PackageManager.PERMISSION_GRANTED) {
+                            val intent = Intent(Intent.ACTION_PICK)
+                            intent.type = "image/*"
+                            startActivityForResult(intent, 1)
+                        } else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+                    }
+                    ui.profilePictureAccount.isClickable = false
                     lifecycleScope.launch {
                         delay(1000)
                         ui.profilePictureAccount.isClickable = true
@@ -464,12 +481,9 @@ class ProfileActivity : BaseActivity() {
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
-                val imageSize = getFileSize(imageUri, contentResolver)
-                if(imageSize <= 3*1024*1024) {
-                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                    ui.profilePictureAccount.colorFilter = null
-                    ui.profilePictureAccount.setImageBitmap(bitmap)
-                } else hint("Avatar must be less than 3 MB, this is ${imageSize/(1024*1024)} MB.")
+                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                ui.profilePictureAccount.colorFilter = null
+                ui.profilePictureAccount.setImageBitmap(bitmap)
             }
         } else if(requestCode != 1) hint("Permission required to access images.")
     }

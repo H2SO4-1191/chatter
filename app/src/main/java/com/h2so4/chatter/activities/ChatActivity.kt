@@ -28,6 +28,7 @@ import com.h2so4.chatter.adapters.ChattersAdapter
 import com.h2so4.chatter.databinding.ActivityChatBinding
 import com.h2so4.chatter.models.Chatter
 import com.h2so4.chatter.models.Message
+import com.h2so4.chatter.models.PreRegex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,6 +68,8 @@ class ChatActivity: BaseActivity() {
         database = FirebaseDatabase.getInstance(BuildConfig.FIREBASE_DB_URL)
         sender = intent.getParcelableExtra("sender")
         receiver = intent.getParcelableExtra("receiver")
+        sender?.profilePicture = PreRegex.me
+        receiver?.profilePicture = PreRegex.them
         ui.send.isClickable = false
         setInfo()
         setChatAdapter()
@@ -94,9 +97,12 @@ class ChatActivity: BaseActivity() {
             ui.profile.isClickable = false
             val profileIntent = Intent(this, ProfileActivity::class.java)
             profileIntent.putExtra("visitor", sender)
+            PreRegex.them = receiver?.profilePicture?:""
+            receiver?.profilePicture = null
             profileIntent.putExtra("account", receiver)
             profileIntent.putExtra("comeBack", true)
             startActivity(profileIntent)
+            receiver?.profilePicture = PreRegex.them
             lifecycleScope.launch {
                 delay(1000)
                 ui.profile.isClickable = true

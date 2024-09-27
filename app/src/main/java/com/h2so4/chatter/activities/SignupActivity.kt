@@ -17,6 +17,7 @@ import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -173,6 +174,7 @@ class SignupActivity : AppCompatActivity() {
                 runnable = Runnable {
                     if(target == ui.confirmPasswordField && !isAnimating && !next.isVisible) {
                         if(target.text.toString() == ui.passwordField.text.toString()) step(next, co)
+                        else hint(ContextCompat.getString(this@SignupActivity, R.string.confirm_password_hint), "Error")
                     } else {
                         if(target.text.toString().matches(regex) && !isAnimating && !next.isVisible) {
                             if(unique) {
@@ -277,12 +279,18 @@ class SignupActivity : AppCompatActivity() {
         }
     }
     private fun setPP() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            == PackageManager.PERMISSION_GRANTED) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val intent = Intent(Intent.ACTION_PICK)
             intent.type = "image/*"
             startActivityForResult(intent, 1)
-        } else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+                val intent = Intent(Intent.ACTION_PICK)
+                intent.type = "image/*"
+                startActivityForResult(intent, 1)
+            } else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+        }
     }
     @Deprecated("This method has been deprecated in favor of using the Activity Result API\n      which brings increased type safety via an {@link ActivityResultContract} and the prebuilt\n      contracts for common intents available in\n      {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for\n      testing, and allow receiving results in separate, testable classes independent from your\n      activity. Use\n      {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}\n      with the appropriate {@link ActivityResultContract} and handling the result in the\n      {@link ActivityResultCallback#onActivityResult(Object) callback}.")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -290,16 +298,13 @@ class SignupActivity : AppCompatActivity() {
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             val imageUri: Uri? = data?.data
             if (imageUri != null) {
-                val imageSize = getFileSize(imageUri, contentResolver)
-                if(imageSize <= 3*1024*1024) {
-                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                    ui.profilePicture.setImageBitmap(bitmap)
-                    ui.profilePicture.foregroundTintList = null
-                    ui.profilePicture.foreground = null
-                    newChatter.profilePicture = encodeImage(bitmap)
-                    ui.pen.setOnLongClickListener { false }
-                    ui.pen.setOnClickListener { confirm() }
-                } else hint("Avatar must be less than 3 MB, this is ${imageSize/(1024*1024)} MB.", "Error")
+                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                ui.profilePicture.setImageBitmap(bitmap)
+                ui.profilePicture.foregroundTintList = null
+                ui.profilePicture.foreground = null
+                newChatter.profilePicture = encodeImage(bitmap)
+                ui.pen.setOnLongClickListener { false }
+                ui.pen.setOnClickListener { confirm() }
             }
         } else if(requestCode != 1) hint("Permission required to access images.", "Error")
     }
@@ -486,19 +491,6 @@ class SignupActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             dialog.show()
-        }
-        fun getFileSize(uri: Uri, contentResolver: ContentResolver): Long {
-            var fileSize: Long = 0
-            try {
-                val cursor = contentResolver.query(uri, null, null, null, null)
-                cursor?.use {
-                    val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
-                    if (it.moveToFirst()) {
-                        fileSize = it.getLong(sizeIndex)
-                    }
-                }
-            } catch (_: Exception) {}
-            return fileSize
         }
     }
 }

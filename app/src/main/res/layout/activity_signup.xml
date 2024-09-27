@@ -305,7 +305,7 @@
             android:background="@null"
             android:backgroundTint="@null"
             android:foregroundTint="@color/seriousYellow"
-            android:scaleType="fitXY"
+            android:scaleType="centerCrop"
             android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="@+id/picContainer"
             app:layout_constraintEnd_toEndOf="@+id/picContainer"
