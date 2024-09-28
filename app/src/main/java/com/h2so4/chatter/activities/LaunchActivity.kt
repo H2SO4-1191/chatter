@@ -6,7 +6,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.google.firebase.firestore.FirebaseFirestore
 import com.h2so4.chatter.R
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @SuppressLint("CustomSplashScreen")
 class LaunchActivity : AppCompatActivity() {
@@ -16,6 +20,7 @@ class LaunchActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         shared = getSharedPreferences("chatter", MODE_PRIVATE)
+        checkFirstLaunch()
         determine()
     }
     private fun determine() {
@@ -26,5 +31,15 @@ class LaunchActivity : AppCompatActivity() {
     private fun getUsername(): String? {
         val username = shared.getString("username", null)
         return username
+    }
+    private fun checkFirstLaunch() {
+        val isFirstLaunch = shared.getBoolean("isFirstLaunch", true)
+        if (isFirstLaunch) {
+            lifecycleScope.launch {
+                shared.edit().clear().apply()
+                shared.edit().putBoolean("isFirstLaunch", false).apply()
+                FirebaseFirestore.getInstance().clearPersistence().await()
+            }
+        }
     }
 }

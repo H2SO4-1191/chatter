@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         tools:text="Are you certain?"
         android:fontFamily="@font/alike_angular"
-        android:textSize="18sp"
+        android:textSize="18dp"
         android:textColor="@color/seriousYellow" />
 
     <LinearLayout

@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/no_chatters_to_chat_with_yet"
-        android:textSize="24sp"
+        android:textSize="24dp"
         android:textColor="@color/seriousYellow"
         android:fontFamily="@font/alike_angular"
         android:textStyle="italic"

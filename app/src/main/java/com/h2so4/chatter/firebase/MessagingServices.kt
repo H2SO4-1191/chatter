@@ -7,37 +7,24 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
-import android.graphics.drawable.BitmapDrawable
 import android.os.Build
-import android.util.Log
-import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.h2so4.chatter.R
-import com.h2so4.chatter.activities.ChatActivity
 import com.h2so4.chatter.activities.LaunchActivity
-import com.h2so4.chatter.activities.SignupActivity
 import com.h2so4.chatter.adapters.ChattersAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 @SuppressLint("MissingFirebaseInstanceTokenRefresh")
 class MessagingService: FirebaseMessagingService() {
@@ -53,7 +40,7 @@ class MessagingService: FirebaseMessagingService() {
             val doc = FirebaseFirestore.getInstance().collection("Chatters").document(title!!).get().await()
             val avatar = doc.getString("ProfilePicture")
             val avatarBitmap = if (avatar != null) ChattersAdapter.decodeImage(avatar)
-            else BitmapFactory.decodeResource(this@MessagingService.resources, R.drawable.baseline_account_circle_24)
+            else Bitmap.createBitmap(200, 200, Bitmap.Config.ARGB_8888)
             val circularAvatar = getCircularBitmap(avatarBitmap)
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val notificationId = System.currentTimeMillis().toInt()

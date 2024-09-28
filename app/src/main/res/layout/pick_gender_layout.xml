@@ -17,7 +17,7 @@
         android:fontFamily="@font/alike_angular"
         android:text="@string/m"
         android:textColor="#4cc9f0"
-        android:textSize="24sp" />
+        android:textSize="24dp" />
 
     <Button
         android:id="@+id/btnF"
@@ -26,7 +26,7 @@
         android:layout_marginStart="25dp"
         android:text="@string/f"
         android:textColor="#ff006e"
-        android:textSize="24sp"
+        android:textSize="24dp"
         android:fontFamily="@font/alike_angular"
         android:background="@drawable/female_switch" />
 </LinearLayout>

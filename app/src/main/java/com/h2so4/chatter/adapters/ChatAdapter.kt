@@ -35,7 +35,6 @@ class ChatAdapter(private val sender: Chatter, private val receiver: Chatter, va
     private var receiverPP =
         if(!receiver.profilePicture.isNullOrBlank()) BitmapDrawable(context.resources, ChattersAdapter.decodeImage(receiver.profilePicture))
         else {
-            Log.d("TEST", "AAA")
             when(receiver.gender){
                 "Male" -> maleDrawable
                 else -> femaleDrawable
@@ -58,10 +57,8 @@ class ChatAdapter(private val sender: Chatter, private val receiver: Chatter, va
     inner class ReceiveViewHolder(private val binding: MessageReceivedCellBinding) : RecyclerView.ViewHolder(binding.root) {
         fun setData(message: Message) {
             binding.senderChatterProfilePicture.setImageDrawable(receiverPP)
-            if(receiverPP == maleDrawable || receiverPP == femaleDrawable) {
+            if(receiverPP == maleDrawable || receiverPP == femaleDrawable)
                 binding.senderChatterProfilePicture.setColorFilter(yellow)
-                Log.d("TEST", "ZZZ")
-            }
             else binding.senderChatterProfilePicture.colorFilter = null
             binding.messageCellReceived.text = message.message
             binding.dateReceived.text = setLocalTime(message.date as Long)

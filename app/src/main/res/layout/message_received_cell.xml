@@ -34,7 +34,7 @@
         android:fontFamily="sans-serif-medium"
         tools:text="Hello, message goes here..."
         android:textColor="@color/black"
-        android:textSize="16sp"
+        android:textSize="16dp"
         android:paddingTop="5dp"
         android:paddingBottom="5dp"
         android:paddingStart="10dp"
@@ -54,12 +54,12 @@
         tools:text="07/01/2004 | 10:30"
         android:textAlignment="center"
         android:textColor="@color/seriousYellowAlpha"
-        android:textSize="8sp"
+        android:textSize="8dp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/messageCellReceived"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="@id/messageCellReceived"
         app:layout_constraintTop_toBottomOf="@id/messageCellReceived"
-        tools:ignore="SmallSp" />
+        tools:ignore="Smalldp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

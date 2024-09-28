@@ -39,7 +39,7 @@
         android:fontFamily="@font/alike_angular"
         android:gravity="center_horizontal"
         android:textColor="@color/seriousYellow"
-        android:textSize="16sp"
+        android:textSize="16dp"
 
         app:layout_constraintEnd_toEndOf="@+id/cardView"
         app:layout_constraintStart_toStartOf="@+id/cardView"

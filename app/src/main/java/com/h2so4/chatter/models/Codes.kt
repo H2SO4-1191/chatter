@@ -188,7 +188,7 @@ object Codes {
         "ZAF" to "+27",
         "SGS" to "+500",
         "SSD" to "+211",
-        "ESP" to "+34",
+        "Edp" to "+34",
         "LKA" to "+94",
         "SDN" to "+249",
         "SUR" to "+597",

@@ -37,6 +37,6 @@
         tools:text="Pop-up"
         android:fontFamily="@font/alike_angular"
         android:textStyle="bold"
-        android:textSize="16sp"
+        android:textSize="16dp"
         android:textColor="@android:color/white" />
 </LinearLayout>

@@ -197,11 +197,11 @@ class LoggedActivity : BaseActivity() {
                 if (value != null) {
                     lifecycleScope.launch(Dispatchers.IO) {
                         val currentChatters = ArrayList<String>()
-                        for(i in chattersAdapter.chatters) currentChatters.add(i.username!!)
+                        for(i in chattersAdapter.chatters) if(i.username != null) currentChatters.add(i.username!!)
                         for(i in value.documentChanges) {
                             when(i.type){
                                 DocumentChange.Type.ADDED -> {
-                                    if(!currentChatters.contains(i.document.id)) {
+                                    if(!currentChatters.contains(i.document.id) && i.document.id.isNotBlank()) {
                                         val newChatter = database.collection("Chatters").document(i.document.id).get().await()
                                         var exists = false
                                         for(j in  chattersAdapter.chatters) {
@@ -218,7 +218,10 @@ class LoggedActivity : BaseActivity() {
                                                 fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
                                             ))
                                         }
-                                        chattersAdapter.notifyItemInserted(0)
+                                        withContext(Dispatchers.Main) {
+                                            delay(500)
+                                            chattersAdapter.notifyItemInserted(0)
+                                        }
                                     }
                                 }
                                 DocumentChange.Type.MODIFIED -> {
@@ -236,6 +239,7 @@ class LoggedActivity : BaseActivity() {
                                                 chattersAdapter.chatters.removeAt(oldIndex)
                                                 chattersAdapter.chatters.add(0, chatterToMove)
                                                 chattersAdapter.notifyItemMoved(oldIndex, 0)
+                                                delay(100)
                                                 val cell = ui.chatChattersInclude.chattersList.findViewHolderForLayoutPosition(0)
                                                 val text = cell?.itemView?.findViewById<TextView>(R.id.chatterLastMessage)
                                                 when(text?.text.toString()) {
@@ -250,7 +254,6 @@ class LoggedActivity : BaseActivity() {
                                                     "1 new message" -> text?.text = "2 New messages"
                                                     else -> {
                                                         val string = text?.text.toString()
-                                                        Log.d("TEST", string)
                                                         val num = string.subSequence(0, string.indexOf("N")).trim().toString().toInt() + 1
                                                         text?.text = "$num New messages"
                                                     }

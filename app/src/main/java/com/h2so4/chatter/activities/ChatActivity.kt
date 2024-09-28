@@ -5,11 +5,8 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.database.ChildEventListener
@@ -70,7 +67,7 @@ class ChatActivity: BaseActivity() {
         receiver = intent.getParcelableExtra("receiver")
         sender?.profilePicture = PreRegex.me
         receiver?.profilePicture = PreRegex.them
-        ui.send.isClickable = false
+        ui.send.isEnabled = false
         setInfo()
         setChatAdapter()
         ui.send.setOnClickListener { send() }
@@ -142,7 +139,7 @@ class ChatActivity: BaseActivity() {
                     setKeyboardListener()
                     setupChatListener()
                     setInChatListener()
-                    ui.send.isClickable = true
+                    ui.send.isEnabled = true
                 }.start()
             }
         }
@@ -150,7 +147,7 @@ class ChatActivity: BaseActivity() {
     private fun send() {
         fun fly() {
             ui.inputMessage.text = null
-            ui.send.isClickable = false
+            ui.send.isEnabled = false
             ui.send.animate().apply {
                 duration = 250
                 translationX(size.widthPixels.toFloat() / 2f)
@@ -159,7 +156,7 @@ class ChatActivity: BaseActivity() {
                 ui.send.animate().apply {
                     duration = 250
                     translationX(0f)
-                }.withEndAction { ui.send.isClickable = true }.start()
+                }.withEndAction { ui.send.isEnabled = true }.start()
             }.start()
         }
         lifecycleScope.launch(Dispatchers.IO) {
@@ -171,7 +168,7 @@ class ChatActivity: BaseActivity() {
                 } else {
                     withContext(Dispatchers.Main) {
                         ui.inputMessage.text = null
-                        ui.send.isClickable = false
+                        ui.send.isEnabled = false
                         ui.send.animate().apply {
                             duration = 600
                             rotation(360f)
@@ -200,7 +197,7 @@ class ChatActivity: BaseActivity() {
                         ui.creatingChat.visibility = View.INVISIBLE
                         ui.send.visibility = View.VISIBLE
                         ui.sayHello.visibility = View.INVISIBLE
-                        ui.send.isClickable = true
+                        ui.send.isEnabled = true
                     }
                     setupChatListener()
                     setInChatListener()
@@ -320,7 +317,6 @@ class ChatActivity: BaseActivity() {
             }
         })
     }
-
     override fun onPause() {
         super.onPause()
         chatReference?.child(sender?.username!!)?.setValue(0)
