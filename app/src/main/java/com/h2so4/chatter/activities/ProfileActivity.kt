@@ -153,11 +153,14 @@ class ProfileActivity : BaseActivity() {
                         if(ui.addedChatters.isEnabled) {
                             ui.addedChatters.isEnabled = false
                             val profileIntent = Intent(this@ProfileActivity, ProfileActivity::class.java)
-                            profileIntent.putExtra("visitor", visitor)
+                            PreRegex.me = visitor?.profilePicture?:""
+                            visitor?.profilePicture = null
                             PreRegex.them = account.profilePicture?:""
                             account.profilePicture = null
+                            profileIntent.putExtra("visitor", visitor)
                             profileIntent.putExtra("account", account)
                             startActivity(profileIntent)
+                            visitor?.profilePicture = PreRegex.me
                             account.profilePicture = PreRegex.them
                             lifecycleScope.launch {
                                 delay(1000)

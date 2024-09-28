@@ -134,6 +134,7 @@ class LoggedActivity : BaseActivity() {
         ui.chatChattersInclude.chattersList.translationX = size.widthPixels.toFloat()*1.25f
         lifecycleScope.launch(Dispatchers.IO) {
             chatChatters = ArrayList()
+            val chattersUsernames = ArrayList<String>()
             withContext(Dispatchers.Main) { load(true) }
             val search: QuerySnapshot? = try { database.collection("Chatters").document(chatter?.username!!).collection("ChatChatters").orderBy("Last", Query.Direction.DESCENDING).get().await() }
             catch(e: Exception) { null }
@@ -141,14 +142,17 @@ class LoggedActivity : BaseActivity() {
                 withContext(Dispatchers.Main) { ui.chatChattersInclude.noChatters.visibility = View.INVISIBLE }
                 for (i in search) {
                     val contact = database.collection("Chatters").document(i.id).get().await()
-                    chatChatters.add(
-                        Chatter(
-                            username = contact.getString("Username"),
-                            profilePicture = contact.getString("ProfilePicture"),
-                            gender = contact.getString("Gender"),
-                            fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
+                    if(!chattersUsernames.contains(contact.getString("Username"))) {
+                        chattersUsernames.add(contact.getString("Username")?:"")
+                        chatChatters.add(
+                            Chatter(
+                                username = contact.getString("Username"),
+                                profilePicture = contact.getString("ProfilePicture"),
+                                gender = contact.getString("Gender"),
+                                fullName = null, email = null, phoneNumber = null, password = null, birth = null, token = null
+                            )
                         )
-                    )
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     chattersAdapter = ChattersAdapter(this@LoggedActivity, chatter!!, chatChatters, 1) { receiver ->
@@ -305,11 +309,14 @@ class LoggedActivity : BaseActivity() {
                                 if(ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled) {
                                     ui.chatChattersInclude.searchChattersInclude.foundChatters.isEnabled = false
                                     val profileIntent = Intent(this@LoggedActivity, ProfileActivity::class.java)
-                                    profileIntent.putExtra("visitor", chatter)
+                                    PreRegex.me = chatter?.profilePicture?:""
+                                    chatter?.profilePicture = null
                                     PreRegex.them = account.profilePicture?:""
                                     account.profilePicture = null
+                                    profileIntent.putExtra("visitor", chatter)
                                     profileIntent.putExtra("account", account)
                                     startActivity(profileIntent)
+                                    chatter?.profilePicture = PreRegex.me
                                     account.profilePicture = PreRegex.them
                                     lifecycleScope.launch {
                                         delay(1000)
@@ -594,7 +601,19 @@ class LoggedActivity : BaseActivity() {
                             }.start()
                         }
                     } else {
-                        if(ui.verificationLayoutInclude.countdown.visibility == View.INVISIBLE) sendEmail()
+                        if(ui.verificationLayoutInclude.countdown.visibility == View.INVISIBLE) {
+                            withContext(Dispatchers.Main) {
+                                try { sendEmail() }
+                                catch(e: Exception) { hint("A verification email had just been sent to ${chatter?.email}") }
+                                load(false)
+                                ui.verificationLayoutInclude.countdown.visibility = View.VISIBLE
+                                for(countDown in 59 downTo  0) {
+                                    ui.verificationLayoutInclude.countdown.text = "00:$countDown"
+                                    delay(1000)
+                                }
+                                ui.verificationLayoutInclude.countdown.visibility = View.INVISIBLE
+                            }
+                        }
                         else withContext(Dispatchers.Main) { hint("Email had already been sent, verify or wait for the countdown to get one again.") }
                     }
                 }

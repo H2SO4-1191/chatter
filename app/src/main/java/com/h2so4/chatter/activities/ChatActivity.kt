@@ -93,12 +93,15 @@ class ChatActivity: BaseActivity() {
         ui.profile.setOnClickListener {
             ui.profile.isClickable = false
             val profileIntent = Intent(this, ProfileActivity::class.java)
-            profileIntent.putExtra("visitor", sender)
+            PreRegex.me = sender?.profilePicture?:""
+            sender?.profilePicture = null
             PreRegex.them = receiver?.profilePicture?:""
             receiver?.profilePicture = null
+            profileIntent.putExtra("visitor", sender)
             profileIntent.putExtra("account", receiver)
             profileIntent.putExtra("comeBack", true)
             startActivity(profileIntent)
+            sender?.profilePicture = PreRegex.me
             receiver?.profilePicture = PreRegex.them
             lifecycleScope.launch {
                 delay(1000)
@@ -161,7 +164,8 @@ class ChatActivity: BaseActivity() {
         }
         lifecycleScope.launch(Dispatchers.IO) {
             if (ui.inputMessage.text.toString().isNotBlank()) {
-                val newMessage = Message(sender?.username!!, ui.inputMessage.text.toString(), inChat?:0,ServerValue.TIMESTAMP)
+                val inChatChat = if(inChat == 0 || inChat == null) 0 else 1
+                val newMessage = Message(sender?.username!!, ui.inputMessage.text.toString(), inChatChat ,ServerValue.TIMESTAMP)
                 if(chatReference != null) {
                     chatReference!!.push().setValue(newMessage)
                     withContext(Dispatchers.Main) { fly() }

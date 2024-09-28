@@ -30,7 +30,7 @@
         android:id="@+id/messageCellReceived"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:maxWidth="300dp"
+        android:maxWidth="250dp"
         android:fontFamily="sans-serif-medium"
         tools:text="Hello, message goes here..."
         android:textColor="@color/black"
