@@ -30,6 +30,7 @@ import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.animation.AnimationUtils
+import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -173,7 +174,11 @@ class SignupActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {
                 runnable = Runnable {
                     if(target == ui.confirmPasswordField && !isAnimating && !next.isVisible) {
-                        if(target.text.toString() == ui.passwordField.text.toString()) step(next, co)
+                        if(target.text.toString() == ui.passwordField.text.toString()) {
+                            step(next, co)
+                            val imm = this@SignupActivity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                            imm.hideSoftInputFromWindow(target.windowToken, 0)
+                        }
                         else hint(ContextCompat.getString(this@SignupActivity, R.string.confirm_password_hint), "Error")
                     } else {
                         if(target.text.toString().matches(regex) && !isAnimating && !next.isVisible) {
@@ -183,12 +188,16 @@ class SignupActivity : AppCompatActivity() {
                                         if(isAvailable(target.text.toString(), type, true)) {
                                             setThings(target)
                                             step(next, co)
+                                            val imm = this@SignupActivity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                                            imm.hideSoftInputFromWindow(target.windowToken, 0)
                                         } else hint("$type ${ContextCompat.getString(this@SignupActivity, R.string.already_registered)}", "Error")
                                     }
                                 }
                             } else {
                                 setThings(target)
                                 step(next, co)
+                                val imm = this@SignupActivity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                                imm.hideSoftInputFromWindow(target.windowToken, 0)
                             }
                         } else if(target.text.toString().isNotBlank() && !isAnimating && !next.isVisible) hint(ContextCompat.getString(this@SignupActivity, R.string.invalid_format), "Error")
                     }
