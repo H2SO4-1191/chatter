@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -20,12 +21,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class ChattersAdapter(private val context: Context, val owner: Chatter, var chatters: ArrayList<Chatter>, val where: Int, private val click: (Chatter) -> Unit): RecyclerView.Adapter<ChattersAdapter.ChatterHolder>() {
     val database = FirebaseDatabase.getInstance(BuildConfig.FIREBASE_DB_URL)
     inner class ChatterHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val picture: ImageView? = itemView.findViewById(R.id.chatterPictureIn)
         private val name: TextView? = itemView.findViewById(R.id.chatterUsername)
+        private val loadMessagesCount: ProgressBar? = itemView.findViewById(R.id.loadMessagesCount)
         private val other: TextView? = itemView.findViewById(R.id.chatterLastMessage)
         fun bindChatter(context: Context, chatter: Chatter) {
             if(!chatter.profilePicture.isNullOrBlank()) picture?.setImageBitmap(decodeImage(chatter.profilePicture))
@@ -39,6 +42,7 @@ class ChattersAdapter(private val context: Context, val owner: Chatter, var chat
             name?.text = chatter.username
             if(where == 0) other?.text = chatter.fullName
             else {
+                loadMessagesCount?.visibility = View.VISIBLE
                 CoroutineScope(Dispatchers.IO).launch {
                     var newMessages = 0
                     val reference1 = database.getReference("Chats").child("${owner.username}|${chatter.username}")
@@ -48,14 +52,16 @@ class ChattersAdapter(private val context: Context, val owner: Chatter, var chat
                     val get = if(check1.exists()) check1 else check2
                     for(i in get.children) if(i.child("sender").getValue(String::class.java) != owner.username
                         && i.child("state").getValue(Int::class.java) == 0) newMessages++
-                    @SuppressLint("SetTextI18n")
-                    other?.text = when(newMessages) {
-                        0 -> "No new messages"
-                        1 -> "1 New message"
-                        else ->"$newMessages New messages"
+                    withContext(Dispatchers.Main) {
+                        other?.text = when(newMessages) {
+                            0 -> "No new messages"
+                            1 -> "1 New message"
+                            else -> "$newMessages New messages"
+                        }
+                        loadMessagesCount?.visibility = View.INVISIBLE
+                        if(newMessages > 0) other?.setTextColor(ContextCompat.getColor(context, R.color.white))
+                        else other?.setTextColor(ContextCompat.getColor(context, R.color.seriousYellowAlpha))
                     }
-                    if(newMessages > 0) other?.setTextColor(ContextCompat.getColor(context, R.color.white))
-                    else other?.setTextColor(ContextCompat.getColor(context, R.color.seriousYellowAlpha))
                 }
             }
             itemView.setOnClickListener { click(chatter) }

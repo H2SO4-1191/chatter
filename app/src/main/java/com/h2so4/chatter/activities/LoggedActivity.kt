@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
@@ -124,6 +123,16 @@ class LoggedActivity : BaseActivity() {
     }
     private fun pass() {
         ui.verificationLayoutInclude.verificationLayout.visibility = View.GONE
+        val editor = shared.edit()
+        editor.putString("fullName", chatter?.fullName)
+        editor.putString("userName", chatter?.username)
+        editor.putString("email", chatter?.email)
+        editor.putString("phoneNumber", chatter?.phoneNumber)
+        editor.putString("gender", chatter?.gender)
+        editor.putString("birth", chatter?.birth)
+        editor.putString("profilePicture", chatter?.profilePicture)
+        editor.putBoolean("isFirstLaunch", false)
+        editor.apply()
         setDrawer()
         setChatterHeaderInfo()
         setAddChatters()
@@ -243,14 +252,10 @@ class LoggedActivity : BaseActivity() {
                                                 chattersAdapter.chatters.removeAt(oldIndex)
                                                 chattersAdapter.chatters.add(0, chatterToMove)
                                                 chattersAdapter.notifyItemMoved(oldIndex, 0)
-                                                delay(100)
+                                                delay(500)
                                                 val cell = ui.chatChattersInclude.chattersList.findViewHolderForLayoutPosition(0)
                                                 val text = cell?.itemView?.findViewById<TextView>(R.id.chatterLastMessage)
                                                 when(text?.text.toString()) {
-                                                    "" -> {
-                                                        text?.setTextColor(ContextCompat.getColor(this@LoggedActivity, R.color.white))
-                                                        text?.text = "1 New message"
-                                                    }
                                                     "No new messages" -> {
                                                         text?.setTextColor(ContextCompat.getColor(this@LoggedActivity, R.color.white))
                                                         text?.text = "1 New message"

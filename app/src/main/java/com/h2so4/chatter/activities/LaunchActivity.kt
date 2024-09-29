@@ -33,8 +33,7 @@ class LaunchActivity : AppCompatActivity() {
         return username
     }
     private fun checkFirstLaunch() {
-        val isFirstLaunch = shared.getBoolean("isFirstLaunch", true)
-        if (isFirstLaunch) {
+        if (shared.getBoolean("isFirstLaunch", true)) {
             lifecycleScope.launch {
                 shared.edit().clear().apply()
                 shared.edit().putBoolean("isFirstLaunch", false).apply()

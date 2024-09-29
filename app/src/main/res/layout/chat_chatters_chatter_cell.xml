@@ -29,6 +29,19 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
     </androidx.cardview.widget.CardView>
+    <ProgressBar
+        android:id="@+id/loadMessagesCount"
+        android:layout_width="30dp"
+        android:layout_height="0dp"
+        android:indeterminate="true"
+        android:visibility="invisible"
+        tools:visibility="visible"
+        android:indeterminateTint="@color/seriousYellow"
+        app:layout_constraintStart_toStartOf="@+id/chatterUsername"
+        app:layout_constraintTop_toBottomOf="@id/chatterUsername"
+        app:layout_constraintEnd_toEndOf="@id/chatterUsername"
+        app:layout_constraintBottom_toBottomOf="@id/chatterPicture"
+        app:layout_constraintHorizontal_bias="0"/>
     <TextView
         android:id="@+id/chatterUsername"
         android:layout_width="0dp"
@@ -58,6 +71,7 @@
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end"
+        android:textAlignment="textStart"
         app:layout_constraintStart_toStartOf="@+id/chatterUsername"
         app:layout_constraintTop_toBottomOf="@id/chatterUsername"
         app:layout_constraintEnd_toEndOf="@id/chatterUsername"
