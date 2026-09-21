@@ -13,3 +13,43 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# === General ===
+*.log
+*.tmp
+.DS_Store
+.env
+.env.*
+
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log/
+dist/
+build/
+
+# === Kotlin / Android ===
+*.iml
+.gradle/
+gradle/
+.idea/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Android Studio auto-generated
+*.apk
+*.ap_
+*.dex
+*.class
+
+# Kotlin
+*.kt~
+*.kts~
+
+# === Databases ===
+*.sqlite3
+db.sqlite3

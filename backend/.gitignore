@@ -1,0 +1,15 @@
+## ==========================================
+## Node.js Backend Gitignore
+## ==========================================
+
+# CRITICAL SECURITY EXCLUSIONS
+*.json
+!package.json
+!package-lock.json
+
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment Configuration File
+.env
